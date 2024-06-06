@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_mekanix_app/helpers/helpers/appcolors.dart';
+import 'package:flutter_mekanix_app/helpers/appcolors.dart';
 
 class CustomTextWidget extends StatelessWidget {
   final String text;

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_mekanix_app/helpers/helpers/appcolors.dart';
-import 'package:flutter_mekanix_app/helpers/helpers/custom_text.dart';
-import 'package:flutter_mekanix_app/helpers/helpers/reusable_container.dart';
+import 'package:flutter_mekanix_app/helpers/appcolors.dart';
+import 'package:flutter_mekanix_app/helpers/custom_text.dart';
+import 'package:flutter_mekanix_app/helpers/reusable_container.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get/get.dart';
 

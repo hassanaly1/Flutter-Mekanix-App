@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_mekanix_app/helpers/helpers/custom_text.dart';
-import 'package:flutter_mekanix_app/helpers/helpers/profile_avatar.dart';
+import 'package:flutter_mekanix_app/helpers/custom_text.dart';
+import 'package:flutter_mekanix_app/helpers/profile_avatar.dart';
 import 'package:get/get.dart';
 
 class ReUsableAppbar extends StatelessWidget {

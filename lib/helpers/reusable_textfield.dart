@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_mekanix_app/helpers/helpers/appcolors.dart';
-import 'package:flutter_mekanix_app/helpers/helpers/reusable_container.dart';
+import 'package:flutter_mekanix_app/helpers/appcolors.dart';
+import 'package:flutter_mekanix_app/helpers/reusable_container.dart';
 import 'package:get/get.dart';
 
 class ReUsableTextField extends StatelessWidget {
