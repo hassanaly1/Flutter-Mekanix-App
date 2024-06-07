@@ -5,16 +5,17 @@ import 'package:get/get.dart';
 class CustomTabBar extends StatelessWidget {
   final String? title1;
   final String? title2;
-  final String? title3;
   final void Function(int)? onTap;
 
-  const CustomTabBar({super.key, this.title1, this.title2, this.title3, this.onTap});
+  const CustomTabBar({super.key, this.title1, this.title2, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: context.isLandscape ? context.width * 0.5 : double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 16.0),
+      padding: const EdgeInsets.all(4.0),
       height: 50,
-      width: Get.width,
       decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16.0),
@@ -31,24 +32,11 @@ class CustomTabBar extends StatelessWidget {
         labelColor: Colors.white,
         unselectedLabelColor: AppColors.primaryColor,
         indicatorSize: TabBarIndicatorSize.tab,
-        isScrollable: true,
-        tabAlignment: TabAlignment.center,
+        // tabAlignment: TabAlignment.center,
         tabs: [
-          if (title3 != null) ...[
-            Tab(text: title1),
-            Tab(text: title2),
-            Tab(text: title3),
-          ] else ...[
-            Tab(text: title1),
-            Tab(text: title2),
-          ],
+          Tab(text: title1),
+          Tab(text: title2),
         ],
-
-        // tabs: [
-        //   Tab(text: title1),
-        //   Tab(text: title2),
-        //   if (title3 != null) Tab(text: title3),
-        // ],
       ),
     );
   }

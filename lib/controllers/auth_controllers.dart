@@ -6,6 +6,7 @@ import 'package:flutter_mekanix_app/views/auth/change_password.dart';
 import 'package:flutter_mekanix_app/views/auth/login.dart';
 import 'package:flutter_mekanix_app/views/auth/otp.dart';
 import 'package:flutter_mekanix_app/views/auth/verify_email.dart';
+import 'package:flutter_mekanix_app/views/dashboard/dashboard.dart';
 import 'package:get/get.dart';
 
 class AuthController extends GetxController {
@@ -200,7 +201,6 @@ class AuthController extends GetxController {
               backgroundColor: Colors.green);
 
           // Accessing the token correctly
-          // _storage.write('token', response['data']['token']); //giving type errors
           String token = response['data'][0]['token'];
 
           debugPrint('TokenReceived: $token');
@@ -210,7 +210,6 @@ class AuthController extends GetxController {
               : Get.offAll(() => const DashboardScreen());
           emailController.clear();
           otpController.clear();
-          // clearAllControllers();
         } else {
           debugPrint('RESPONSE: ${response['message']}');
           ToastMessage.showToastMessage(
