@@ -76,12 +76,12 @@ class VerifyEmailScreen extends StatelessWidget {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            CustomTextWidget(
+                            const CustomTextWidget(
                               text: 'Verify Your Email',
                               fontSize: 16.0,
                               fontWeight: FontWeight.w600,
                             ),
-                            CustomTextWidget(
+                            const CustomTextWidget(
                               text:
                                   'Enter email address to verify your Account',
                               fontSize: 12.0,

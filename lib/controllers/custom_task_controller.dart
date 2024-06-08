@@ -1,37 +1,55 @@
-import 'dart:convert';
-
-import 'package:flutter/material.dart';
 import 'package:flutter_mekanix_app/models/custom_task_model.dart';
 import 'package:get/get.dart';
 
 class CustomTaskController extends GetxController {
-  final formElements = <MyCustomItemModel>[].obs;
-  final formSections = <MyFormSection>[].obs;
-  final tasks = <MyCustomTask>[].obs;
-  
-  // final images = <Uint8List>[].obs;
+  RxBool saveAsTemplate = false.obs;
+  final submittedTasks = <MyCustomTask>[].obs;
+  final templates = <MyCustomTask>[].obs;
 
-  // @override
-  // void onInit() {
-  //   debugPrint('formSections: ${formSections.length}');
-  //   debugPrint('FormElements: ${formElements.length}');
-  //   super.onInit();
-  // }
+// final images = <Uint8List>[].obs;
 
-  void addTask(MyCustomTask e) => tasks.add(e);
+// void addTask(MyCustomTask e) => tasks.add(e);
+//
+// void removeTask(MyCustomTask e) => tasks.remove(e);
+//
+// void addFormSection(
+//     {required MyFormSection formSection, required int index}) {
+//   tasks[index].formSections.add(formSection);
+//   debugPrint(
+//       'formSectionsAtTaskAtIndex$index: ${tasks[index].formSections.length}');
+// }
+//
+// void removeFormSection(
+//     {required MyFormSection formSection, required int index}) {
+//   tasks[index].formSections.remove(formSection);
+//   debugPrint(
+//       'formSectionsAtTaskAtIndex$index: ${tasks[index].formSections.length}');
+// }
 
-  void removeTask(MyCustomTask e) => tasks.remove(e);
+// void addFormElement({
+//   required MyCustomItemModel item,
+//   required int taskIndex,
+//   required int sectionIndex,
+// }) {
+//   tasks[taskIndex].formSections[sectionIndex].elements.add(item);
+//   tasks.refresh();
+//   debugPrint(
+//       'FormElementsAtSectionIndex$sectionIndex: ${tasks[taskIndex].formSections[sectionIndex].elements.length}');
+// }
+//
+// void removeFormElement({
+//   required MyCustomItemModel item,
+//   required int taskIndex,
+//   required int sectionIndex,
+// }) {
+//   tasks[taskIndex].formSections[sectionIndex].elements.remove(item);
+//   tasks.refresh();
+//   debugPrint(
+//       'FormElementsAtSectionIndex$sectionIndex: ${tasks[taskIndex].formSections[sectionIndex].elements.length}');
+// }
 
-  void addFormSection(MyFormSection e) => formSections.add(e);
-
-  void removeFormSection(MyFormSection e) => formSections.remove(e);
-
-  void addFormElement(MyCustomItemModel e) => formElements.add(e);
-
-  void removeFormElement(MyCustomItemModel e) => formElements.remove(e);
-
-  void sending() {
-    var list = formElements.map((e) => e.toMap()).toList();
-    debugPrint('OnSubmit: ${jsonEncode(list)}');
-  }
+// void sending() {
+//   var list = tasks.map((e) => e.toMap()).toList();
+//   debugPrint('OnSubmit: ${jsonEncode(list)}');
+// }
 }

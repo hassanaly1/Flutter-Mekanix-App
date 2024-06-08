@@ -77,12 +77,12 @@ class SignupScreen extends StatelessWidget {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              CustomTextWidget(
+                              const CustomTextWidget(
                                 text: 'Register Account',
                                 fontSize: 16.0,
                                 fontWeight: FontWeight.w600,
                               ),
-                              CustomTextWidget(
+                              const CustomTextWidget(
                                 text:
                                     'Fill the Details to register your account',
                                 fontSize: 12.0,

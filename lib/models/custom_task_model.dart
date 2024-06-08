@@ -2,9 +2,16 @@ import 'dart:typed_data';
 
 class MyCustomTask {
   final String name;
-  final List<MyFormSection>? formSections;
+  final List<MyFormSection> formSections;
 
-  MyCustomTask({required this.name, this.formSections});
+  MyCustomTask({required this.name, required this.formSections});
+
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'formSections': formSections.map((e) => e.toMap()).toList(),
+    };
+  }
 }
 
 class MyFormSection {
@@ -12,6 +19,13 @@ class MyFormSection {
 
   final String heading;
   final List<MyCustomItemModel> elements;
+
+  Map<String, dynamic> toMap() {
+    return {
+      'heading': heading,
+      'elements': elements.map((e) => e.toMap()).toList(),
+    };
+  }
 }
 
 enum MyCustomItemType { textfield, textArea, radioButton, checkbox, attachment }

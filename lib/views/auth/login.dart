@@ -79,12 +79,12 @@ class LoginScreen extends StatelessWidget {
                           child: Column(
                             children: [
                               SizedBox(height: context.height * 0.1),
-                              CustomTextWidget(
+                              const CustomTextWidget(
                                 text: 'Login to your Account',
                                 fontSize: 16.0,
                                 fontWeight: FontWeight.w600,
                               ),
-                              CustomTextWidget(
+                              const CustomTextWidget(
                                 text: 'Please enter your Email & Password.',
                                 fontSize: 12.0,
                                 fontWeight: FontWeight.w500,
@@ -125,7 +125,7 @@ class LoginScreen extends StatelessWidget {
                                         transition: Transition.size,
                                         duration: const Duration(seconds: 1),
                                       ),
-                                      child: CustomTextWidget(
+                                      child: const CustomTextWidget(
                                         text: 'Forget Password?',
                                         fontSize: 12.0,
                                         textAlign: TextAlign.center,

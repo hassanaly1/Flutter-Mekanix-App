@@ -133,7 +133,7 @@ class _OtpScreenState extends State<OtpScreen> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               SizedBox(height: context.height * 0.1),
-                              CustomTextWidget(
+                              const CustomTextWidget(
                                 text: 'Check Your Email',
                                 fontSize: 16.0,
                                 fontWeight: FontWeight.w600,
@@ -194,7 +194,7 @@ class _OtpScreenState extends State<OtpScreen> {
                                           horizontal: 20.0),
                                       child: Column(
                                         children: [
-                                          CustomTextWidget(
+                                          const CustomTextWidget(
                                             text: 'Didn\'t receive the code?',
                                             fontSize: 14,
                                           ),
@@ -211,7 +211,7 @@ class _OtpScreenState extends State<OtpScreen> {
                                               controller.otpController.clear();
                                               startTimer();
                                             },
-                                            child: CustomTextWidget(
+                                            child: const CustomTextWidget(
                                               text: 'Resend OTP',
                                               fontSize: 16,
                                               fontWeight: FontWeight.w500,

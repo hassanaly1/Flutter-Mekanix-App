@@ -78,12 +78,12 @@ class ChangePasswordScreen extends StatelessWidget {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              CustomTextWidget(
+                              const CustomTextWidget(
                                 text: 'Change your password',
                                 fontSize: 16.0,
                                 fontWeight: FontWeight.w600,
                               ),
-                              CustomTextWidget(
+                              const CustomTextWidget(
                                 text:
                                     'Enter password and confirm password to change your password',
                                 fontSize: 12.0,

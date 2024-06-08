@@ -15,7 +15,7 @@ class ProfileAvatar extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Obx(
-        () => CircleAvatar(
+        () => const CircleAvatar(
             radius: 25,
             backgroundColor: Colors.white,
             // backgroundImage: MemoryImage(controller.userImageInBytes!),

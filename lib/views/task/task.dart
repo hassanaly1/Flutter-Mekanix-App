@@ -8,7 +8,6 @@ import 'package:flutter_mekanix_app/helpers/reusable_container.dart';
 import 'package:flutter_mekanix_app/helpers/tabbar.dart';
 import 'package:flutter_mekanix_app/models/custom_task_model.dart';
 import 'package:flutter_mekanix_app/views/task/custom_task.dart';
-import 'package:flutter_mekanix_app/views/task/custom_task_body.dart';
 import 'package:flutter_mekanix_app/views/task/widgets/heading_and_textfield.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
@@ -24,6 +23,7 @@ class TaskScreen extends StatefulWidget {
 
 class _TaskScreenState extends State<TaskScreen> {
   late CustomTaskController controller;
+  TextEditingController reportNameController = TextEditingController();
 
   @override
   void initState() {
@@ -34,25 +34,24 @@ class _TaskScreenState extends State<TaskScreen> {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-        child: PopScope(
-      canPop: false,
-      onPopInvoked: (didPop) {
-        widget.sideMenu.changePage(0);
-      },
-      child: DefaultTabController(
-        length: 2,
-        child: Container(
-          decoration: const BoxDecoration(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(32.0),
-              topRight: Radius.circular(32.0),
+      child: PopScope(
+        canPop: false,
+        onPopInvoked: (didPop) {
+          widget.sideMenu.changePage(0);
+        },
+        child: DefaultTabController(
+          length: 2,
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(32.0),
+                topRight: Radius.circular(32.0),
+              ),
             ),
-          ),
-          child: Scaffold(
-            backgroundColor: Colors.transparent,
-            body: NestedScrollView(
-                // controller: controller.scrollController,
+            child: Scaffold(
+              backgroundColor: Colors.transparent,
+              body: NestedScrollView(
                 headerSliverBuilder: (context, innerBoxIsScrolled) {
                   return [
                     SliverAppBar(
@@ -69,30 +68,55 @@ class _TaskScreenState extends State<TaskScreen> {
                           TopSection(
                             sideMenuController: widget.sideMenu,
                             controller: controller,
-                          ),
+                            reportNameController: reportNameController,
+                          )
                         ],
                       ),
-                    ),
+                    )
                   ];
                 },
-                body: const BottomPageViewSection()),
+                body: Column(
+                  children: [
+                    const CustomTabBar(
+                      title1: 'Submitted Tasks',
+                      title2: 'Templates',
+                    ),
+                    Expanded(
+                      child: TabBarView(
+                        children: [
+                          TaskListView(
+                              isTemplate: false,
+                              tasks: controller.submittedTasks),
+                          TaskListView(
+                              isTemplate: true, tasks: controller.templates),
+                        ],
+                      ),
+                    )
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ),
-    ));
+    );
   }
 }
 
 class TopSection extends StatelessWidget {
   final CustomTaskController controller;
   final SideMenuController sideMenuController;
+  final TextEditingController reportNameController;
 
-  const TopSection(
-      {super.key, required this.sideMenuController, required this.controller});
+  const TopSection({
+    super.key,
+    required this.sideMenuController,
+    required this.controller,
+    required this.reportNameController,
+  });
 
   @override
   Widget build(BuildContext context) {
-    TextEditingController reportNameController = TextEditingController();
     return Container(
       color: Colors.transparent,
       child: Column(
@@ -125,51 +149,10 @@ class TopSection extends StatelessWidget {
                       ),
                       IconButton(
                         onPressed: () {
-                          showCustomPopup(
+                          CustomPopup.show(
                             context: context,
-                            width: context.isLandscape
-                                ? context.width * 0.3
-                                : context.width * 0.5,
-                            widget: Column(
-                              children: [
-                                const CustomTextWidget(
-                                    text: 'New Task',
-                                    fontSize: 16.0,
-                                    fontWeight: FontWeight.w600),
-                                const SizedBox(height: 24.0),
-                                HeadingAndTextfield(
-                                  title: 'Enter Report Name',
-                                  controller: reportNameController,
-                                ),
-                                CustomButton(
-                                    buttonText: 'Create',
-                                    onTap: () {
-                                      if (reportNameController
-                                          .text.isNotEmpty) {
-                                        MyCustomTask task = MyCustomTask(
-                                            name: reportNameController.text
-                                                .trim());
-                                        Get.to(
-                                          () => CustomTaskScreen(
-                                            task: task,
-                                            controller: controller,
-                                            sideMenu: sideMenuController,
-                                            reportName: reportNameController
-                                                .text
-                                                .trim(),
-                                          ),
-                                        );
-                                      } else {
-                                        Get.snackbar(
-                                            'Error', 'Please Enter Report Name',
-                                            backgroundColor: Colors.red,
-                                            snackPosition: SnackPosition.BOTTOM,
-                                            colorText: Colors.white70);
-                                      }
-                                    },
-                                    isLoading: false)
-                              ],
-                            ),
+                            reportNameController: reportNameController,
+                            controller: controller,
                           );
                         },
                         icon: const Icon(FontAwesomeIcons.circlePlus),
@@ -186,23 +169,118 @@ class TopSection extends StatelessWidget {
   }
 }
 
-class BottomPageViewSection extends StatelessWidget {
-  const BottomPageViewSection({super.key});
+class TaskListView extends StatelessWidget {
+  final bool isTemplate;
+  final List<MyCustomTask> tasks;
+
+  const TaskListView({
+    super.key,
+    required this.tasks,
+    required this.isTemplate,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
+    return Column(
       children: [
-        CustomTabBar(title1: 'Draft Tasks', title2: 'Submitted Tasks'),
-        Expanded(
-          child: TabBarView(
-            children: [
-              Center(child: Text('Draft Tasks')),
-              Center(child: Text('Submitted Tasks')),
-            ],
-          ),
-        )
+        Obx(
+          () => tasks.isEmpty
+              ? Center(
+                  heightFactor: 10.0,
+                  child: CustomTextWidget(
+                    text: isTemplate
+                        ? 'No Templates Available'
+                        : 'No Submitted Tasks Available',
+                  ),
+                )
+              : Expanded(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: tasks.length,
+                    itemBuilder: (context, index) {
+                      final task = tasks[index];
+                      return Padding(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: context.width * 0.04),
+                        child: ReUsableContainer(
+                          child: ListTile(
+                            onTap: () {},
+                            leading: CustomTextWidget(
+                              text: '${index + 1}'.toString(),
+                              fontSize: 16.0,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            title: CustomTextWidget(
+                              text: task.name,
+                              fontSize: 16.0,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            titleAlignment: ListTileTitleAlignment.center,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+        ),
       ],
+    );
+  }
+}
+
+class CustomPopup {
+  static void show({
+    required BuildContext context,
+    required TextEditingController reportNameController,
+    required CustomTaskController controller,
+  }) {
+    showCustomPopup(
+      context: context,
+      width: context.isLandscape ? context.width * 0.3 : context.width * 0.5,
+      widget: Column(
+        children: [
+          const CustomTextWidget(
+            text: 'New Task',
+            fontSize: 16.0,
+            fontWeight: FontWeight.w600,
+          ),
+          const SizedBox(height: 24.0),
+          HeadingAndTextfield(
+            title: 'Enter Report Name',
+            controller: reportNameController,
+          ),
+          CustomButton(
+            buttonText: 'Create',
+            onTap: () {
+              if (reportNameController.text.isNotEmpty) {
+                // MyCustomTask task = MyCustomTask(
+                //   name: reportNameController.text.trim(),
+                //   formSections: <MyFormSection>[].obs,
+                // );
+                // controller.addTask(task);
+                Get.back();
+                Get.to(
+                  () => CustomTaskScreen(
+                    controller: controller,
+                    reportName: reportNameController.text.trim(),
+                    isTemplate: false,
+                  ),
+                );
+              } else {
+                Get.snackbar(
+                  'Error',
+                  'Please Enter Report Name',
+                  backgroundColor: Colors.red,
+                  snackPosition: SnackPosition.BOTTOM,
+                  colorText: Colors.white70,
+                );
+              }
+            },
+            isLoading: false,
+          ),
+        ],
+      ),
     );
   }
 }
