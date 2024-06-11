@@ -5,11 +5,14 @@ import 'package:flutter_mekanix_app/services/task_service.dart';
 import 'package:get/get.dart';
 
 class CustomTaskController extends GetxController {
+  RxBool isLoading = false.obs;
   RxBool isTemplate = false.obs;
   RxBool isForm = false.obs;
   final submittedTasks = <MyCustomTask>[].obs;
   final templates = <MyCustomTask>[].obs;
   final attachments = <Uint8List>[].obs;
+  RxString engineBrandId = ''.obs;
+  RxString engineBrandName = ''.obs;
 
   final TaskService _taskService = TaskService();
 

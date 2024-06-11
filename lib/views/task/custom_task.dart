@@ -154,17 +154,9 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                   textAlign: TextAlign.center,
                   fontWeight: FontWeight.w600,
                 ),
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: () => showAddSectionPopup(context),
-                      icon: const Icon(FontAwesomeIcons.circlePlus),
-                    ),
-                    IconButton(
-                      onPressed: () {},
-                      icon: const Icon(Icons.qr_code),
-                    ),
-                  ],
+                IconButton(
+                  onPressed: () => showAddSectionPopup(context),
+                  icon: const Icon(FontAwesomeIcons.circlePlus),
                 ),
               ],
             ),

@@ -47,6 +47,7 @@ class HeadingAndTextfield extends StatelessWidget {
             text: title,
             fontWeight: FontWeight.w500,
             maxLines: 1,
+            fontSize: fontSize,
           ),
           ReUsableTextField(
             showDeleteIcon: showDeleteIcon,
@@ -79,16 +80,17 @@ class HeadingAndTextfieldInRow extends StatelessWidget {
   final TextEditingController? controller;
   final String? Function(String?)? validator;
 
-  const HeadingAndTextfieldInRow({super.key,
-    required this.title,
-    required this.hintText,
-    this.readOnly,
-    this.validator,
-    this.controller,
-    this.maxLines,
-    this.suffixIcon,
-    this.prefixIcon,
-    this.keyboardType});
+  const HeadingAndTextfieldInRow(
+      {super.key,
+      required this.title,
+      required this.hintText,
+      this.readOnly,
+      this.validator,
+      this.controller,
+      this.maxLines,
+      this.suffixIcon,
+      this.prefixIcon,
+      this.keyboardType});
 
   @override
   Widget build(BuildContext context) {

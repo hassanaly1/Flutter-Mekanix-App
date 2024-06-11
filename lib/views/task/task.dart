@@ -1,13 +1,18 @@
 import 'package:easy_sidemenu/easy_sidemenu.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mekanix_app/controllers/custom_task_controller.dart';
+import 'package:flutter_mekanix_app/controllers/universal_controller.dart';
 import 'package:flutter_mekanix_app/helpers/appcolors.dart';
 import 'package:flutter_mekanix_app/helpers/custom_button.dart';
 import 'package:flutter_mekanix_app/helpers/custom_text.dart';
+import 'package:flutter_mekanix_app/helpers/dropdown.dart';
 import 'package:flutter_mekanix_app/helpers/reusable_container.dart';
 import 'package:flutter_mekanix_app/helpers/tabbar.dart';
+import 'package:flutter_mekanix_app/helpers/toast.dart';
 import 'package:flutter_mekanix_app/models/custom_task_model.dart';
+import 'package:flutter_mekanix_app/services/engine_service.dart';
 import 'package:flutter_mekanix_app/views/task/custom_task.dart';
+import 'package:flutter_mekanix_app/views/task/scan_qrcode.dart';
 import 'package:flutter_mekanix_app/views/task/widgets/heading_and_textfield.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
@@ -15,7 +20,9 @@ import 'package:get/get.dart';
 class TaskScreen extends StatefulWidget {
   final SideMenuController sideMenu;
 
-  const TaskScreen({super.key, required this.sideMenu});
+  TaskScreen({super.key, required this.sideMenu});
+
+  final UniversalController universalController = Get.find();
 
   @override
   State<TaskScreen> createState() => _TaskScreenState();
@@ -69,6 +76,7 @@ class _TaskScreenState extends State<TaskScreen> {
                             sideMenuController: widget.sideMenu,
                             controller: controller,
                             reportNameController: reportNameController,
+                            universalController: widget.universalController,
                           )
                         ],
                       ),
@@ -112,12 +120,14 @@ class TopSection extends StatelessWidget {
   final CustomTaskController controller;
   final SideMenuController sideMenuController;
   final TextEditingController reportNameController;
+  final UniversalController universalController;
 
   const TopSection({
     super.key,
     required this.sideMenuController,
     required this.controller,
     required this.reportNameController,
+    required this.universalController,
   });
 
   @override
@@ -135,35 +145,32 @@ class TopSection extends StatelessWidget {
               child: ReUsableContainer(
                 color: AppColors.primaryColor,
                 width: context.width * 1,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const IconButton(
-                        onPressed: null,
-                        icon: Icon(FontAwesomeIcons.circlePlus,
-                            color: Colors.transparent),
-                      ),
-                      const CustomTextWidget(
-                        text: 'Custom Task',
-                        fontSize: 16.0,
-                        maxLines: 2,
-                        textAlign: TextAlign.center,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      IconButton(
-                        onPressed: () {
-                          CustomPopup.show(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const IconButton(
+                      onPressed: null,
+                      icon: Icon(FontAwesomeIcons.circlePlus,
+                          color: Colors.transparent),
+                    ),
+                    const CustomTextWidget(
+                      text: 'Custom Task',
+                      fontSize: 16.0,
+                      maxLines: 2,
+                      textAlign: TextAlign.center,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    IconButton(
+                      onPressed: () {
+                        CustomPopup.show(
                             context: context,
                             reportNameController: reportNameController,
                             controller: controller,
-                          );
-                        },
-                        icon: const Icon(FontAwesomeIcons.circlePlus),
-                      ),
-                    ],
-                  ),
+                            universalController: universalController);
+                      },
+                      icon: const Icon(FontAwesomeIcons.circlePlus),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -244,11 +251,13 @@ class CustomPopup {
     required BuildContext context,
     required TextEditingController reportNameController,
     required CustomTaskController controller,
+    required UniversalController universalController,
   }) {
     showCustomPopup(
       context: context,
       width: context.isLandscape ? context.width * 0.3 : context.width * 0.5,
       widget: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const CustomTextWidget(
             text: 'New Task',
@@ -258,33 +267,100 @@ class CustomPopup {
           const SizedBox(height: 24.0),
           HeadingAndTextfield(
             title: 'Enter Report Name',
+            fontSize: 12.0,
             controller: reportNameController,
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const CustomTextWidget(
+                text: 'Engine Brand',
+                fontWeight: FontWeight.w500,
+                fontSize: 12.0,
+                maxLines: 2,
+              ),
+              IconButton(
+                onPressed: () {
+                  Get.to(() => const ScanQrCodeScreen(),
+                      transition: Transition.rightToLeft);
+                },
+                icon: const Icon(Icons.qr_code),
+              ),
+            ],
+          ),
+          Obx(
+            () => InkWell(
+              onTap: () {
+                universalController.engines.isEmpty
+                    ? ToastMessage.showToastMessage(
+                        message:
+                            'Please Add Engines first from the Engine section.',
+                        backgroundColor: Colors.red)
+                    : null;
+              },
+              child: CustomDropdown(
+                items: universalController.engines,
+                hintText: controller.engineBrandName.value != ''
+                    ? controller.engineBrandName.value
+                    : 'Select Engine Brand',
+                onChanged: (value) async {
+                  try {
+                    final result = await EngineService()
+                        .getEngineData(engineName: value?.name ?? '');
+
+                    if (result['success']) {
+                      final engineData = result['data'];
+                      final engineId = engineData['_id'];
+                      final engineName = engineData['name'];
+
+                      controller.engineBrandName.value = engineName ?? '';
+                      controller.engineBrandId.value = engineId;
+                      debugPrint('EngineId: ${controller.engineBrandId.value}');
+                      debugPrint(
+                          'EngineName: ${controller.engineBrandName.value}');
+                    } else {
+                      final errorMessage = result['message'];
+                      debugPrint('Failed to fetch engine data');
+                      debugPrint('ErrorData: ${result['data']}');
+                      debugPrint('ErrorMessage: $errorMessage');
+
+                      ToastMessage.showToastMessage(
+                          message: errorMessage,
+                          backgroundColor: AppColors.blueTextColor);
+                    }
+                  } catch (e) {
+                    debugPrint('An error occurred: $e');
+                    ToastMessage.showToastMessage(
+                        message: 'An error occurred, please try again',
+                        backgroundColor: AppColors.blueTextColor);
+                  }
+                },
+              ),
+            ),
           ),
           CustomButton(
             buttonText: 'Create',
             onTap: () {
               if (reportNameController.text.isNotEmpty) {
-                // MyCustomTask task = MyCustomTask(
-                //   name: reportNameController.text.trim(),
-                //   formSections: <MyFormSection>[].obs,
-                // );
-                // controller.addTask(task);
-                Get.back();
-                Get.to(
-                  () => CustomTaskScreen(
-                    controller: controller,
-                    reportName: reportNameController.text.trim(),
-                    isTemplateTask: false,
-                  ),
-                );
+                if (controller.engineBrandName.value.isNotEmpty &&
+                    controller.engineBrandId.value.isNotEmpty) {
+                  Get.back();
+                  Get.to(
+                    () => CustomTaskScreen(
+                      controller: controller,
+                      reportName: reportNameController.text.trim(),
+                      isTemplateTask: false,
+                    ),
+                  );
+                } else {
+                  ToastMessage.showToastMessage(
+                      message: 'Please Select Engine from the Dropdown.',
+                      backgroundColor: AppColors.blueTextColor);
+                }
               } else {
-                Get.snackbar(
-                  'Error',
-                  'Please Enter Report Name',
-                  backgroundColor: Colors.red,
-                  snackPosition: SnackPosition.BOTTOM,
-                  colorText: Colors.white70,
-                );
+                ToastMessage.showToastMessage(
+                    message: 'Please Enter Report Name.',
+                    backgroundColor: AppColors.blueTextColor);
               }
             },
             isLoading: false,

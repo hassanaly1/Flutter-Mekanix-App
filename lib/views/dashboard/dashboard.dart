@@ -128,7 +128,7 @@ class HomeAppbar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: context.height * 0.15,
+      height: context.height * 0.18,
       child: Padding(
         padding: const EdgeInsets.all(4.0),
         child: Column(
