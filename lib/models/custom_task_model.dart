@@ -1,15 +1,24 @@
-import 'dart:typed_data';
+import 'dart:convert';
 
 class MyCustomTask {
+  bool isTemplate;
+  bool isForm;
   final String name;
   final List<MyFormSection> formSections;
 
-  MyCustomTask({required this.name, required this.formSections});
+  MyCustomTask({
+    required this.name,
+    required this.formSections,
+    required this.isTemplate,
+    required this.isForm,
+  });
 
-  Map<String, dynamic> toMap() {
+  Map<String, String> toMap() {
     return {
+      'is_template': isTemplate.toString(),
+      'is_form': isForm.toString(),
       'name': name,
-      'formSections': formSections.map((e) => e.toMap()).toList(),
+      'formSections': jsonEncode(formSections.map((e) => e.toMap()).toList()),
     };
   }
 }
@@ -28,7 +37,7 @@ class MyFormSection {
   }
 }
 
-enum MyCustomItemType { textfield, textArea, radioButton, checkbox, attachment }
+enum MyCustomItemType { textfield, textarea, radiobutton, checkbox, attachment }
 
 String? _typeInString(MyCustomItemType? type) => type?.name;
 
@@ -36,10 +45,10 @@ MyCustomItemType? _typeFromString(String? type) {
   switch (type) {
     case 'textfield':
       return MyCustomItemType.textfield;
-    case 'textArea':
-      return MyCustomItemType.textArea;
-    case 'radioButton':
-      return MyCustomItemType.radioButton;
+    case 'textarea':
+      return MyCustomItemType.textarea;
+    case 'radiobutton':
+      return MyCustomItemType.radiobutton;
     case 'checkbox':
       return MyCustomItemType.checkbox;
     case 'attachment':
@@ -63,14 +72,14 @@ class MyCustomItemModel {
       'options': options,
       'type': _typeInString(type),
       'value': type == MyCustomItemType.textfield ||
-              type == MyCustomItemType.textArea
+              type == MyCustomItemType.textarea
           ? controller.text.trim()
-          : type == MyCustomItemType.radioButton
+          : type == MyCustomItemType.radiobutton
               ? controller.value
               : type == MyCustomItemType.checkbox
                   ? controller.value
                   : type == MyCustomItemType.attachment
-                      ? (controller is Uint8List ? controller : null)
+                      ? (controller is int ? controller : null)
                       : null
     };
   }
@@ -80,7 +89,7 @@ class MyCustomItemModel {
       label: map['heading'],
       options: map['options'],
       type: _typeFromString(map['type']),
-      controller: map['controller'],
+      controller: map['value'],
     );
   }
 }

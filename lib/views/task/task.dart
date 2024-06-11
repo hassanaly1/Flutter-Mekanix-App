@@ -85,10 +85,15 @@ class _TaskScreenState extends State<TaskScreen> {
                       child: TabBarView(
                         children: [
                           TaskListView(
-                              isTemplate: false,
-                              tasks: controller.submittedTasks),
+                            isTemplate: false,
+                            controller: controller,
+                            tasks: controller.submittedTasks,
+                          ),
                           TaskListView(
-                              isTemplate: true, tasks: controller.templates),
+                            isTemplate: true,
+                            controller: controller,
+                            tasks: controller.templates,
+                          ),
                         ],
                       ),
                     )
@@ -172,59 +177,64 @@ class TopSection extends StatelessWidget {
 class TaskListView extends StatelessWidget {
   final bool isTemplate;
   final List<MyCustomTask> tasks;
+  final CustomTaskController controller;
 
   const TaskListView({
     super.key,
     required this.tasks,
     required this.isTemplate,
+    required this.controller,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Obx(
-          () => tasks.isEmpty
-              ? Center(
-                  heightFactor: 10.0,
-                  child: CustomTextWidget(
-                    text: isTemplate
-                        ? 'No Templates Available'
-                        : 'No Submitted Tasks Available',
-                  ),
-                )
-              : Expanded(
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: tasks.length,
-                    itemBuilder: (context, index) {
-                      final task = tasks[index];
-                      return Padding(
-                        padding: EdgeInsets.symmetric(
-                            horizontal: context.width * 0.04),
-                        child: ReUsableContainer(
-                          child: ListTile(
-                            onTap: () {},
-                            leading: CustomTextWidget(
-                              text: '${index + 1}'.toString(),
-                              fontSize: 16.0,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            title: CustomTextWidget(
-                              text: task.name,
-                              fontSize: 16.0,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            titleAlignment: ListTileTitleAlignment.center,
+    return Obx(
+      () => tasks.isEmpty
+          ? Center(
+              heightFactor: 10.0,
+              child: CustomTextWidget(
+                text: isTemplate
+                    ? 'No Templates Available'
+                    : 'No Submitted Tasks Available',
+              ),
+            )
+          : ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: tasks.length,
+              itemBuilder: (context, index) {
+                final task = tasks[index];
+                return Padding(
+                  padding:
+                      EdgeInsets.symmetric(horizontal: context.width * 0.04),
+                  child: ReUsableContainer(
+                    child: ListTile(
+                      onTap: () {
+                        Get.to(
+                          () => CustomTaskScreen(
+                            controller: controller,
+                            reportName: task.name,
+                            task: task,
+                            isTemplateTask: task.isTemplate,
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                      leading: CustomTextWidget(
+                        text: '${index + 1}'.toString(),
+                        fontSize: 16.0,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      title: CustomTextWidget(
+                        text: task.name,
+                        fontSize: 16.0,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      titleAlignment: ListTileTitleAlignment.center,
+                    ),
                   ),
-                ),
-        ),
-      ],
+                );
+              },
+            ),
     );
   }
 }
@@ -264,7 +274,7 @@ class CustomPopup {
                   () => CustomTaskScreen(
                     controller: controller,
                     reportName: reportNameController.text.trim(),
-                    isTemplate: false,
+                    isTemplateTask: false,
                   ),
                 );
               } else {

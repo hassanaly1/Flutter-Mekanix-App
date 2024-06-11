@@ -2,11 +2,13 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_mekanix_app/helpers/storage_helper.dart';
+import 'package:flutter_mekanix_app/models/engine_model.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
 class UniversalController extends GetxController {
   RxBool isLoading = false.obs;
+  List<EngineModel> engines = <EngineModel>[].obs;
 
   XFile? userImage;
   RxString userImageURL = ''.obs;
@@ -17,7 +19,9 @@ class UniversalController extends GetxController {
     userImageURL.value = value;
     update();
   }
+
   final RxInt currentPage = 1.obs;
+
   @override
   void onInit() async {
     super.onInit();

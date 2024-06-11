@@ -1,5 +1,6 @@
 import 'package:easy_sidemenu/easy_sidemenu.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_mekanix_app/views/engines/engine.dart';
 import 'package:flutter_mekanix_app/views/profile.dart';
 import 'package:flutter_mekanix_app/views/task/task.dart';
 
@@ -24,7 +25,7 @@ class RightSideWidget extends StatelessWidget {
         children: [
           Container(),
           TaskScreen(sideMenu: sideMenu),
-          Container(),
+          EnginesScreen(sideMenu: sideMenu),
           Container(),
           ProfileSection(sideMenu: sideMenu),
         ],

@@ -46,7 +46,11 @@ class _DashboardScreenState extends State<DashboardScreen>
               key: _scaffoldKey,
               backgroundColor: Colors.transparent,
               drawer: !context.isLandscape
-                  ? Drawer(child: SideMenuCard(sideMenu: controller.sideMenu))
+                  ? Drawer(
+                      child: SideMenuCard(
+                      sideMenu: controller.sideMenu,
+                      scaffoldKey: _scaffoldKey,
+                    ))
                   : null,
               body: Column(
                 children: [
@@ -61,7 +65,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                         mainAxisAlignment: MainAxisAlignment.start,
                         children: [
                           if (context.isLandscape)
-                            SideMenuCard(sideMenu: controller.sideMenu),
+                            SideMenuCard(
+                                sideMenu: controller.sideMenu,
+                                scaffoldKey: _scaffoldKey),
                           RightSideWidget(
                             pageController: controller.pageController,
                             sideMenu: controller.sideMenu,

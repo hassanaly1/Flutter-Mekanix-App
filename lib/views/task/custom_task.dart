@@ -19,7 +19,7 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
 class CustomTaskScreen extends StatefulWidget {
-  final bool isTemplate;
+  final bool isTemplateTask;
   final String reportName;
   final MyCustomTask? task;
   final CustomTaskController controller;
@@ -28,7 +28,7 @@ class CustomTaskScreen extends StatefulWidget {
       {super.key,
       required this.reportName,
       this.task,
-      required this.isTemplate,
+      required this.isTemplateTask,
       required this.controller});
 
   @override
@@ -37,6 +37,8 @@ class CustomTaskScreen extends StatefulWidget {
 
 class _CustomTaskScreenState extends State<CustomTaskScreen> {
   late Rx<MyCustomTask> _task;
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _hintTextController = TextEditingController();
   final _radioController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
@@ -47,8 +49,18 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
         MyCustomTask(
           name: widget.reportName,
           formSections: <MyFormSection>[],
+          isTemplate: widget.controller.isTemplate.value,
+          isForm: widget.controller.isForm.value,
+          // files: <Uint8List>[],
         ));
     super.initState();
+  }
+
+  void _updateTask() {
+    _task.update((task) {
+      task?.isTemplate = widget.controller.isTemplate.value;
+      task?.isForm = widget.controller.isForm.value;
+    });
   }
 
   @override
@@ -95,17 +107,19 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                     topRight: Radius.circular(32.0),
                   ),
                 ),
-                child: Obx(() => _task.value.formSections.isEmpty
-                    ? const Align(
-                        alignment: Alignment.center,
-                        child: CustomTextWidget(
-                          maxLines: 2,
-                          textAlign: TextAlign.center,
-                          fontSize: 12.0,
-                          text: 'No Items Added, Tap on + icon to add items.',
-                        ),
-                      )
-                    : _buildFormSectionsList()),
+                child: Obx(
+                  () => _task.value.formSections.isEmpty
+                      ? const Align(
+                          alignment: Alignment.center,
+                          child: CustomTextWidget(
+                            maxLines: 2,
+                            textAlign: TextAlign.center,
+                            fontSize: 12.0,
+                            text: 'No Items Added, Tap on + icon to add items.',
+                          ),
+                        )
+                      : _buildFormSectionsList(),
+                ),
               ),
             ),
           ),
@@ -206,34 +220,73 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Visibility(
-                  visible: !widget.isTemplate,
+                  visible: !widget.isTemplateTask,
                   child: CheckboxListTile(
                     contentPadding: EdgeInsets.zero,
                     activeColor: AppColors.blueTextColor,
                     controlAffinity: ListTileControlAffinity.leading,
                     title: const CustomTextWidget(
                       text: 'Save as template for future use',
-                      fontSize: 10.0,
+                      fontSize: 12.0,
                     ),
-                    value: widget.controller.saveAsTemplate.value,
+                    value: widget.controller.isTemplate.value,
                     onChanged: (value) {
-                      widget.controller.saveAsTemplate.value = value!;
+                      widget.controller.isTemplate.value = value!;
                     },
                   ),
                 ),
-                CustomButton(
-                  isLoading: false,
-                  buttonText: widget.isTemplate ? 'Save as template' : 'Submit',
-                  onTap: () {
-                    if (widget.controller.saveAsTemplate.value) {
-                      widget.controller.templates.add(_task.value);
-                      widget.controller.submittedTasks.add(_task.value);
-                    } else {
-                      widget.controller.submittedTasks.add(_task.value);
-                    }
-                    Get.back();
-                    // widget.controller.sending();
-                  },
+                Row(
+                  children: [
+                    Visibility(
+                      visible: !widget.isTemplateTask,
+                      child: Flexible(
+                        child: CustomButton(
+                          usePrimaryColor: true,
+                          isLoading: false,
+                          buttonText: 'Save as template only',
+                          onTap: () {
+                            widget.controller.isTemplate.value = true;
+                            widget.controller.isForm.value = false;
+                            _updateTask();
+                            widget.controller.templates.add(_task.value);
+                            widget.controller.onSaveAsTemplate(
+                              _task.value,
+                              // _task.value.files,
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    Flexible(
+                      child: CustomButton(
+                        isLoading: false,
+                        buttonText: widget.isTemplateTask ? 'Save' : 'Submit',
+                        onTap: () {
+                          if (widget.isTemplateTask) {
+                            print('Save Template');
+                          } else {
+                            if (widget.controller.isTemplate.value) {
+                              widget.controller.isTemplate.value = true;
+                              widget.controller.isForm.value = true;
+                              _updateTask();
+                              widget.controller.templates.add(_task.value);
+                              widget.controller.submittedTasks.add(_task.value);
+                            } else {
+                              widget.controller.isTemplate.value = false;
+                              widget.controller.isForm.value = true;
+                              _updateTask();
+                              widget.controller.submittedTasks.add(_task.value);
+                            }
+                            // Get.back();
+                            widget.controller.onSubmitTask(
+                              _task.value,
+                              // _task.value.files,
+                            );
+                          }
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -258,13 +311,9 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                   _task.value.formSections[sectionIndex].elements
                       .remove(element);
                   _task.refresh();
-                  // widget.controller.removeFormElement(
-                  //     taskIndex: widget.taskIndex,
-                  //     sectionIndex: sectionIndex,
-                  //     item: element)
                 },
               );
-            case MyCustomItemType.textArea:
+            case MyCustomItemType.textarea:
               return HeadingAndTextfield(
                 title: element.label ?? '',
                 controller: element.controller,
@@ -274,13 +323,9 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                   _task.value.formSections[sectionIndex].elements
                       .remove(element);
                   _task.refresh();
-                  // widget.controller.removeFormElement(
-                  //     taskIndex: widget.taskIndex,
-                  //     sectionIndex: sectionIndex,
-                  //     item: element)
                 },
               );
-            case MyCustomItemType.radioButton:
+            case MyCustomItemType.radiobutton:
               return CustomRadioButton(
                 options: element.options ?? [],
                 selectedOption: element.controller,
@@ -290,10 +335,6 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                   _task.value.formSections[sectionIndex].elements
                       .remove(element);
                   _task.refresh();
-                  // widget.controller.removeFormElement(
-                  //     taskIndex: widget.taskIndex,
-                  //     sectionIndex: sectionIndex,
-                  //     item: element)
                 },
               );
             case MyCustomItemType.checkbox:
@@ -306,37 +347,47 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                   _task.value.formSections[sectionIndex].elements
                       .remove(element);
                   _task.refresh();
-                  // widget.controller.removeFormElement(
-                  //     taskIndex: widget.taskIndex,
-                  //     sectionIndex: sectionIndex,
-                  //     item: element)
                 },
               );
             case MyCustomItemType.attachment:
-              return HeadingAndTextfield(
-                title: element.label ?? '',
-                hintText: element.controller is String
-                    ? element.controller
-                    : 'Attachment added',
-                readOnly: true,
-                onTap: () async {
-                  XFile? image = await ImagePicker()
-                      .pickImage(source: ImageSource.gallery);
-                  if (image != null) {
-                    Uint8List imageBytes = await image.readAsBytes();
-                    element.controller = imageBytes;
-                  }
-                },
-                showDeleteIcon: true,
-                onDelete: () {
-                  _task.value.formSections[sectionIndex].elements
-                      .remove(element);
-                  _task.refresh();
-                  // widget.controller.removeFormElement(
-                  //     taskIndex: widget.taskIndex,
-                  //     sectionIndex: sectionIndex,
-                  //     item: element)
-                },
+              RxString fileName = ''.obs;
+              return Obx(
+                () => HeadingAndTextfield(
+                  title: element.label ?? '',
+                  hintText: fileName.value == ''
+                      ? 'No file selected'
+                      : fileName.value,
+                  readOnly: true,
+                  onTap: () async {
+                    XFile? image = await ImagePicker().pickImage(
+                      source: ImageSource.gallery,
+                    );
+
+                    if (image != null) {
+                      fileName.value = image.name;
+                      // Check file extension
+                      String fileExtension =
+                          image.name.split('.').last.toLowerCase();
+                      if (fileExtension == 'png' ||
+                          fileExtension == 'jpeg' ||
+                          fileExtension == 'jpg') {
+                        // Uint8List imageBytes = await image.readAsBytes();
+                        // int i = _task.value.files.length;
+                        // _task.value.files.insert(i, imageBytes);
+                        // print('File added: ${image.path}');
+                      } else {
+                        Get.snackbar(
+                            'Error.', 'Please select a PNG or JPEG file.');
+                      }
+                    }
+                  },
+                  showDeleteIcon: true,
+                  onDelete: () {
+                    _task.value.formSections[sectionIndex].elements
+                        .remove(element);
+                    _task.refresh();
+                  },
+                ),
               );
             default:
               return Container();
@@ -437,7 +488,7 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                     MyCustomItemModel myCustomItemModel = MyCustomItemModel(
                       label: _hintTextController.text,
                       type: isTextArea
-                          ? MyCustomItemType.textArea
+                          ? MyCustomItemType.textarea
                           : MyCustomItemType.textfield,
                       controller: TextEditingController(),
                     );
@@ -592,7 +643,7 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                   label: _hintTextController.text,
                   type: isCheckbox
                       ? MyCustomItemType.checkbox
-                      : MyCustomItemType.radioButton,
+                      : MyCustomItemType.radiobutton,
                   options: options,
                   controller: isCheckbox ? RxList<String>([]) : RxString(''),
                 );
@@ -632,10 +683,8 @@ void showCustomPopup(
                   backgroundColor: Colors.transparent,
                   content: Container(
                     width: width,
-                    // height: context.height * 0.3,
                     padding: EdgeInsets.symmetric(
                         horizontal: 24.0, vertical: context.height * 0.05),
-
                     decoration: const BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.centerLeft,

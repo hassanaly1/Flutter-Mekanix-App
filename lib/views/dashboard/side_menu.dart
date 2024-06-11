@@ -7,9 +7,11 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
 
 class SideMenuCard extends StatelessWidget {
-  const SideMenuCard({super.key, required this.sideMenu});
+  const SideMenuCard(
+      {super.key, required this.sideMenu, required this.scaffoldKey});
 
   final SideMenuController sideMenu;
+  final GlobalKey<ScaffoldState> scaffoldKey;
 
   @override
   Widget build(BuildContext context) {
@@ -115,6 +117,7 @@ class SideMenuCard extends StatelessWidget {
       onTap: (index, _) {
         sideMenu.changePage(index);
         debugPrint(onTapMessage);
+        scaffoldKey.currentState?.closeDrawer();
       },
     );
   }
