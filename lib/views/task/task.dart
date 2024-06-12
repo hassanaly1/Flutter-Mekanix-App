@@ -10,10 +10,10 @@ import 'package:flutter_mekanix_app/helpers/reusable_container.dart';
 import 'package:flutter_mekanix_app/helpers/tabbar.dart';
 import 'package:flutter_mekanix_app/helpers/toast.dart';
 import 'package:flutter_mekanix_app/models/custom_task_model.dart';
-import 'package:flutter_mekanix_app/services/engine_service.dart';
 import 'package:flutter_mekanix_app/views/task/custom_task.dart';
 import 'package:flutter_mekanix_app/views/task/scan_qrcode.dart';
 import 'package:flutter_mekanix_app/views/task/widgets/heading_and_textfield.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
 
@@ -31,6 +31,7 @@ class TaskScreen extends StatefulWidget {
 class _TaskScreenState extends State<TaskScreen> {
   late CustomTaskController controller;
   TextEditingController reportNameController = TextEditingController();
+  RxInt currentPage = 0.obs;
 
   @override
   void initState() {
@@ -62,7 +63,7 @@ class _TaskScreenState extends State<TaskScreen> {
                 headerSliverBuilder: (context, innerBoxIsScrolled) {
                   return [
                     SliverAppBar(
-                      expandedHeight: context.height * 0.15,
+                      expandedHeight: context.height * 0.13,
                       pinned: false,
                       floating: true,
                       primary: false,
@@ -85,7 +86,25 @@ class _TaskScreenState extends State<TaskScreen> {
                 },
                 body: Column(
                   children: [
-                    const CustomTabBar(
+                    // ReUsableTextField(
+                    //   controller: controller.searchController,
+                    //   hintText: 'Search Task',
+                    //   suffixIcon: const Icon(Icons.search_sharp),
+                    //   onChanged: (value) {
+                    //     if (currentPage.value == 0) {
+                    //       debugPrint('SearchingSubmittedTasks');
+                    //       controller.getAllCustomTasks(searchName: value);
+                    //     } else {
+                    //       debugPrint('SearchingTemplates');
+                    //       controller.getAllCustomTasks(
+                    //           searchName: value, isTemplate: true);
+                    //     }
+                    //   },
+                    // ),
+                    CustomTabBar(
+                      // onTap: (val) {
+                      //   currentPage.value = val;
+                      // },
                       title1: 'Submitted Tasks',
                       title2: 'Templates',
                     ),
@@ -196,52 +215,65 @@ class TaskListView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(
-      () => tasks.isEmpty
-          ? Center(
-              heightFactor: 10.0,
-              child: CustomTextWidget(
-                text: isTemplate
-                    ? 'No Templates Available'
-                    : 'No Submitted Tasks Available',
-              ),
-            )
-          : ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: tasks.length,
-              itemBuilder: (context, index) {
-                final task = tasks[index];
-                return Padding(
-                  padding:
-                      EdgeInsets.symmetric(horizontal: context.width * 0.04),
-                  child: ReUsableContainer(
-                    child: ListTile(
-                      onTap: () {
-                        Get.to(
-                          () => CustomTaskScreen(
-                            controller: controller,
-                            reportName: task.name,
-                            task: task,
-                            isTemplateTask: task.isTemplate,
-                          ),
-                        );
-                      },
-                      leading: CustomTextWidget(
-                        text: '${index + 1}'.toString(),
-                        fontSize: 16.0,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      title: CustomTextWidget(
-                        text: task.name,
-                        fontSize: 16.0,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      titleAlignment: ListTileTitleAlignment.center,
-                    ),
+      () => controller.isTasksAreLoading.value
+          ? const Center(child: CircularProgressIndicator())
+          : tasks.isEmpty
+              ? Center(
+                  heightFactor: 10.0,
+                  child: CustomTextWidget(
+                    text: isTemplate
+                        ? 'No Templates Available'
+                        : 'No Submitted Tasks Available',
                   ),
-                );
-              },
-            ),
+                )
+              : ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: tasks.length,
+                  itemBuilder: (context, index) {
+                    final task = tasks[index];
+                    return Padding(
+                      padding: EdgeInsets.symmetric(
+                          horizontal: context.width * 0.04),
+                      child: ReUsableContainer(
+                        child: ListTile(
+                          onTap: () {
+                            Get.to(
+                              () => CustomTaskScreen(
+                                reportName: task.name,
+                                task: task,
+                                isTemplate: task.isTemplate,
+                              ),
+                            );
+                          },
+                          trailing: InkWell(
+                            onTap: () {
+                              _showDeletePopup(
+                                  context: context,
+                                  controller: controller,
+                                  id: task.id ?? '');
+                            },
+                            child: const Icon(
+                              Icons.remove_circle,
+                              color: Colors.red,
+                            ),
+                          ),
+                          leading: CustomTextWidget(
+                            text: '${index + 1}'.toString(),
+                            fontSize: 16.0,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          title: CustomTextWidget(
+                            text: task.name,
+                            fontSize: 16.0,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          titleAlignment: ListTileTitleAlignment.center,
+                        ),
+                      ),
+                    );
+                  },
+                ),
     );
   }
 }
@@ -304,36 +336,36 @@ class CustomPopup {
                     ? controller.engineBrandName.value
                     : 'Select Engine Brand',
                 onChanged: (value) async {
-                  try {
-                    final result = await EngineService()
-                        .getEngineData(engineName: value?.name ?? '');
-
-                    if (result['success']) {
-                      final engineData = result['data'];
-                      final engineId = engineData['_id'];
-                      final engineName = engineData['name'];
-
-                      controller.engineBrandName.value = engineName ?? '';
-                      controller.engineBrandId.value = engineId;
-                      debugPrint('EngineId: ${controller.engineBrandId.value}');
-                      debugPrint(
-                          'EngineName: ${controller.engineBrandName.value}');
-                    } else {
-                      final errorMessage = result['message'];
-                      debugPrint('Failed to fetch engine data');
-                      debugPrint('ErrorData: ${result['data']}');
-                      debugPrint('ErrorMessage: $errorMessage');
-
-                      ToastMessage.showToastMessage(
-                          message: errorMessage,
-                          backgroundColor: AppColors.blueTextColor);
-                    }
-                  } catch (e) {
-                    debugPrint('An error occurred: $e');
-                    ToastMessage.showToastMessage(
-                        message: 'An error occurred, please try again',
-                        backgroundColor: AppColors.blueTextColor);
-                  }
+                  // try {
+                  //   final result = await EngineService()
+                  //       .getEngineData(engineName: value?.name ?? '');
+                  //
+                  //   if (result['success']) {
+                  //     final engineData = result['data'];
+                  //     final engineId = engineData['_id'];
+                  //     final engineName = engineData['name'];
+                  //
+                  //     controller.engineBrandName.value = engineName ?? '';
+                  //     controller.engineBrandId.value = engineId;
+                  //     debugPrint('EngineId: ${controller.engineBrandId.value}');
+                  //     debugPrint(
+                  //         'EngineName: ${controller.engineBrandName.value}');
+                  //   } else {
+                  //     final errorMessage = result['message'];
+                  //     debugPrint('Failed to fetch engine data');
+                  //     debugPrint('ErrorData: ${result['data']}');
+                  //     debugPrint('ErrorMessage: $errorMessage');
+                  //
+                  //     ToastMessage.showToastMessage(
+                  //         message: errorMessage,
+                  //         backgroundColor: AppColors.blueTextColor);
+                  //   }
+                  // } catch (e) {
+                  //   debugPrint('An error occurred: $e');
+                  //   ToastMessage.showToastMessage(
+                  //       message: 'An error occurred, please try again',
+                  //       backgroundColor: AppColors.blueTextColor);
+                  // }
                 },
               ),
             ),
@@ -341,32 +373,139 @@ class CustomPopup {
           CustomButton(
             buttonText: 'Create',
             onTap: () {
-              if (reportNameController.text.isNotEmpty) {
-                if (controller.engineBrandName.value.isNotEmpty &&
-                    controller.engineBrandId.value.isNotEmpty) {
-                  Get.back();
-                  Get.to(
-                    () => CustomTaskScreen(
-                      controller: controller,
-                      reportName: reportNameController.text.trim(),
-                      isTemplateTask: false,
-                    ),
-                  );
-                } else {
-                  ToastMessage.showToastMessage(
-                      message: 'Please Select Engine from the Dropdown.',
-                      backgroundColor: AppColors.blueTextColor);
-                }
-              } else {
-                ToastMessage.showToastMessage(
-                    message: 'Please Enter Report Name.',
-                    backgroundColor: AppColors.blueTextColor);
-              }
+              Get.back();
+              Get.to(
+                () => CustomTaskScreen(
+                  reportName: reportNameController.text.trim(),
+                  isTemplate: false,
+                ),
+              );
             },
+            // onTap: () {
+            //   if (reportNameController.text.isNotEmpty) {
+            //     if (controller.engineBrandName.value.isNotEmpty &&
+            //         controller.engineBrandId.value.isNotEmpty) {
+            //       Get.back();
+            //       Get.to(
+            //         () => CustomTaskScreen(
+            //           controller: controller,
+            //           reportName: reportNameController.text.trim(),
+            //           isTemplateTask: false,
+            //         ),
+            //       );
+            //     } else {
+            //       ToastMessage.showToastMessage(
+            //           message: 'Please Select Engine from the Dropdown.',
+            //           backgroundColor: AppColors.blueTextColor);
+            //     }
+            //   } else {
+            //     ToastMessage.showToastMessage(
+            //         message: 'Please Enter Report Name.',
+            //         backgroundColor: AppColors.blueTextColor);
+            //   }
+            // },
             isLoading: false,
           ),
         ],
       ),
     );
   }
+}
+
+void _showDeletePopup(
+    {required BuildContext context,
+    required CustomTaskController controller,
+    required String id}) {
+  showGeneralDialog(
+    context: context,
+    barrierDismissible: true,
+    barrierLabel: 'Dismiss',
+    transitionDuration: const Duration(milliseconds: 100),
+    pageBuilder: (context, animation, secondaryAnimation) => Container(),
+    transitionBuilder: (context, animation, secondaryAnimation, child) {
+      return ScaleTransition(
+          scale: Tween<double>(begin: 0.5, end: 1.0).animate(animation),
+          child: FadeTransition(
+              opacity: Tween<double>(begin: 0.5, end: 1.0).animate(animation),
+              child: AlertDialog(
+                  scrollable: true,
+                  backgroundColor: Colors.transparent,
+                  content: Container(
+                    width: context.width * 0.5,
+                    padding: EdgeInsets.symmetric(
+                        horizontal: 8.0, vertical: context.height * 0.02),
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [
+                          Color.fromRGBO(255, 220, 105, 0.4),
+                          Color.fromRGBO(86, 127, 255, 0.4),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.all(Radius.circular(12.0)),
+                      boxShadow: [
+                        BoxShadow(
+                            color: Colors.black26,
+                            blurRadius: 5.0,
+                            spreadRadius: 5.0),
+                        BoxShadow(
+                            color: Colors.white,
+                            offset: Offset(0.0, 0.0),
+                            blurRadius: 0.0,
+                            spreadRadius: 0.0)
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const CustomTextWidget(
+                            text:
+                                'Are you sure to delete the Task? This action cannot be undone.',
+                            fontSize: 14.0,
+                            maxLines: 3,
+                            textAlign: TextAlign.center,
+                            fontWeight: FontWeight.w400),
+                        const SizedBox(height: 12.0),
+                        Obx(
+                          () => InkWell(
+                              onTap: () {
+                                controller.deleteCustomTask(taskId: id);
+                              },
+                              child: ReUsableContainer(
+                                verticalPadding: context.height * 0.01,
+                                height: 50,
+                                color: Colors.red,
+                                child: Center(
+                                    child: controller.isLoading.value
+                                        ? const Padding(
+                                            padding: EdgeInsets.all(8.0),
+                                            child: SpinKitRing(
+                                              lineWidth: 2.0,
+                                              color: Colors.white,
+                                            ),
+                                          )
+                                        : const CustomTextWidget(
+                                            text: 'Delete',
+                                            fontSize: 12,
+                                            textColor: Colors.white,
+                                            fontWeight: FontWeight.w600,
+                                            textAlign: TextAlign.center,
+                                          )),
+                              )),
+                        ),
+                        CustomButton(
+                          isLoading: false,
+                          usePrimaryColor: false,
+                          buttonText: 'Cancel',
+                          fontSize: 12.0,
+                          onTap: () {
+                            Get.back();
+                          },
+                        )
+                      ],
+                    ),
+                  ))));
+    },
+  );
 }

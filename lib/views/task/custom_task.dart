@@ -1,8 +1,8 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:easy_sidemenu/easy_sidemenu.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_mekanix_app/controllers/custom_task_controller.dart';
 import 'package:flutter_mekanix_app/helpers/appcolors.dart';
 import 'package:flutter_mekanix_app/helpers/custom_button.dart';
 import 'package:flutter_mekanix_app/helpers/custom_text.dart';
@@ -10,6 +10,7 @@ import 'package:flutter_mekanix_app/helpers/reusable_container.dart';
 import 'package:flutter_mekanix_app/helpers/reusable_textfield.dart';
 import 'package:flutter_mekanix_app/helpers/validator.dart';
 import 'package:flutter_mekanix_app/models/custom_task_model.dart';
+import 'package:flutter_mekanix_app/services/task_service.dart';
 import 'package:flutter_mekanix_app/views/task/widgets/checkbox.dart';
 import 'package:flutter_mekanix_app/views/task/widgets/heading.dart';
 import 'package:flutter_mekanix_app/views/task/widgets/heading_and_textfield.dart';
@@ -19,17 +20,16 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
 class CustomTaskScreen extends StatefulWidget {
-  final bool isTemplateTask;
+  final bool isTemplate;
   final String reportName;
   final MyCustomTask? task;
-  final CustomTaskController controller;
 
-  const CustomTaskScreen(
-      {super.key,
-      required this.reportName,
-      this.task,
-      required this.isTemplateTask,
-      required this.controller});
+  const CustomTaskScreen({
+    super.key,
+    this.task,
+    required this.isTemplate,
+    required this.reportName,
+  });
 
   @override
   State<CustomTaskScreen> createState() => _CustomTaskScreenState();
@@ -37,8 +37,8 @@ class CustomTaskScreen extends StatefulWidget {
 
 class _CustomTaskScreenState extends State<CustomTaskScreen> {
   late Rx<MyCustomTask> _task;
-  final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
+  final _isForm = true.obs, _isTemplate = false.obs;
+  final _attachments = <Uint8List>[];
   final _hintTextController = TextEditingController();
   final _radioController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
@@ -49,19 +49,20 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
         MyCustomTask(
           name: widget.reportName,
           formSections: <MyFormSection>[],
-          isTemplate: widget.controller.isTemplate.value,
-          isForm: widget.controller.isForm.value,
-          // files: <Uint8List>[],
+          isForm: _isForm.value,
+          isTemplate: _isTemplate.value,
         ));
     super.initState();
   }
 
-  void _updateTask() {
-    _task.update((task) {
-      task?.isTemplate = widget.controller.isTemplate.value;
-      task?.isForm = widget.controller.isForm.value;
-    });
-  }
+  // void _updateTask() {
+  //   _isTemplate.value = !_isTemplate.value;
+  //   _task.value.isTemplate = _isTemplate.value;
+  //   // _task.update((task) {
+  //   //   task?.isForm = widget.controller.isForm.value;
+  //   //   task?.isTemplate = widget.controller.isTemplate.value;
+  //   // });
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -73,7 +74,7 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
           Scaffold(
             backgroundColor: Colors.transparent,
             floatingActionButton: Padding(
-              padding: const EdgeInsets.only(bottom: 80.0, right: 40),
+              padding: const EdgeInsets.only(bottom: 40.0),
               child: FloatingActionButton(
                 onPressed: () {},
                 backgroundColor: AppColors.primaryColor,
@@ -85,15 +86,18 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
             body: NestedScrollView(
               headerSliverBuilder: (context, innerBoxIsScrolled) => [
                 SliverAppBar(
-                  pinned: true,
                   centerTitle: true,
                   automaticallyImplyLeading: false,
                   backgroundColor: Colors.red,
                   forceMaterialTransparency: true,
-                  expandedHeight: context.height * 0.2,
-                  bottom: PreferredSize(
-                    preferredSize: const Size.fromHeight(kToolbarHeight),
-                    child: _buildHeader(context),
+                  expandedHeight: context.height * 0.1,
+                  flexibleSpace: Center(
+                    child: CustomTextWidget(
+                      text: widget.reportName,
+                      fontSize: 22.0,
+                      fontWeight: FontWeight.w600,
+                      textColor: Colors.white70,
+                    ),
                   ),
                 ),
               ],
@@ -108,17 +112,23 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                   ),
                 ),
                 child: Obx(
-                  () => _task.value.formSections.isEmpty
-                      ? const Align(
-                          alignment: Alignment.center,
-                          child: CustomTextWidget(
-                            maxLines: 2,
-                            textAlign: TextAlign.center,
-                            fontSize: 12.0,
-                            text: 'No Items Added, Tap on + icon to add items.',
-                          ),
-                        )
-                      : _buildFormSectionsList(),
+                  () => Column(
+                    children: [
+                      _buildHeader(context),
+                      _task.value.formSections.isEmpty
+                          ? const Align(
+                              alignment: Alignment.center,
+                              child: CustomTextWidget(
+                                maxLines: 2,
+                                textAlign: TextAlign.center,
+                                fontSize: 12.0,
+                                text:
+                                    'No Items Added, Tap on + icon to add items.',
+                              ),
+                            )
+                          : Expanded(child: _buildFormSectionsList()),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -143,16 +153,8 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                 IconButton(
                   onPressed: () {
                     Get.back();
-                    Get.delete<CustomTaskController>();
                   },
                   icon: const Icon(Icons.arrow_back_rounded),
-                ),
-                CustomTextWidget(
-                  text: widget.reportName,
-                  fontSize: 20.0,
-                  maxLines: 2,
-                  textAlign: TextAlign.center,
-                  fontWeight: FontWeight.w600,
                 ),
                 IconButton(
                   onPressed: () => showAddSectionPopup(context),
@@ -188,13 +190,11 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                         children: [
                           ContainerHeading(
                             heading: section.heading,
-                            onPressed: () => showAddElementPopup(context,
+                            onAdd: () => showAddElementPopup(context,
                                 sectionIndex: index),
                             onDelete: () {
                               _task.value.formSections.removeAt(index);
                               _task.refresh();
-                              // widget.controller.removeFormSection(
-                              //     formSection: section, index: index)
                             },
                           ),
                           _buildSectionElements(index),
@@ -206,82 +206,36 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
               ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Visibility(
-                  visible: !widget.isTemplateTask,
-                  child: CheckboxListTile(
-                    contentPadding: EdgeInsets.zero,
-                    activeColor: AppColors.blueTextColor,
-                    controlAffinity: ListTileControlAffinity.leading,
-                    title: const CustomTextWidget(
-                      text: 'Save as template for future use',
-                      fontSize: 12.0,
-                    ),
-                    value: widget.controller.isTemplate.value,
-                    onChanged: (value) {
-                      widget.controller.isTemplate.value = value!;
-                    },
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Visibility(
+                visible: !widget.isTemplate,
+                child: CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  activeColor: AppColors.blueTextColor,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  title: const CustomTextWidget(
+                    text: 'Save as template for future use',
+                    fontSize: 12.0,
                   ),
+                  value: _isTemplate.value,
+                  onChanged: (value) {
+                    _isTemplate.value = !_isTemplate.value;
+                    _task.value.isTemplate = _isTemplate.value;
+                  },
                 ),
-                Row(
-                  children: [
-                    Visibility(
-                      visible: !widget.isTemplateTask,
-                      child: Flexible(
-                        child: CustomButton(
-                          usePrimaryColor: true,
-                          isLoading: false,
-                          buttonText: 'Save as template only',
-                          onTap: () {
-                            widget.controller.isTemplate.value = true;
-                            widget.controller.isForm.value = false;
-                            _updateTask();
-                            widget.controller.templates.add(_task.value);
-                            widget.controller.onSaveAsTemplate(
-                              _task.value,
-                              // _task.value.files,
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                    Flexible(
-                      child: CustomButton(
-                        isLoading: false,
-                        buttonText: widget.isTemplateTask ? 'Save' : 'Submit',
-                        onTap: () {
-                          if (widget.isTemplateTask) {
-                            print('Save Template');
-                          } else {
-                            if (widget.controller.isTemplate.value) {
-                              widget.controller.isTemplate.value = true;
-                              widget.controller.isForm.value = true;
-                              _updateTask();
-                              widget.controller.templates.add(_task.value);
-                              widget.controller.submittedTasks.add(_task.value);
-                            } else {
-                              widget.controller.isTemplate.value = false;
-                              widget.controller.isForm.value = true;
-                              _updateTask();
-                              widget.controller.submittedTasks.add(_task.value);
-                            }
-                            // Get.back();
-                            widget.controller.onSubmitTask(
-                              _task.value,
-                              // _task.value.files,
-                            );
-                          }
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+              ),
+              CustomButton(
+                isLoading: false,
+                buttonText: _isTemplate.value ? 'Save as template' : 'Submit',
+                onTap: () {
+                  print(_task.value.toMap());
+                  print(_attachments.length);
+                  onSubmitTask(_task.value, _attachments);
+                },
+              )
+            ],
           ),
         ],
       ),
@@ -296,9 +250,10 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
           switch (element.type) {
             case MyCustomItemType.textfield:
               return HeadingAndTextfield(
-                title: element.label ?? '',
-                controller: element.controller,
                 showDeleteIcon: true,
+                title: element.label ?? '',
+                controller: TextEditingController(text: element.value),
+                onChanged: (String? value) => element.value = value ?? '',
                 onDelete: () {
                   _task.value.formSections[sectionIndex].elements
                       .remove(element);
@@ -307,10 +262,11 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
               );
             case MyCustomItemType.textarea:
               return HeadingAndTextfield(
-                title: element.label ?? '',
-                controller: element.controller,
                 maxLines: 5,
                 showDeleteIcon: true,
+                title: element.label ?? '',
+                controller: TextEditingController(text: element.value),
+                onChanged: (String? value) => element.value = value ?? '',
                 onDelete: () {
                   _task.value.formSections[sectionIndex].elements
                       .remove(element);
@@ -320,7 +276,7 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
             case MyCustomItemType.radiobutton:
               return CustomRadioButton(
                 options: element.options ?? [],
-                selectedOption: element.controller,
+                selectedOption: RxString(element.value ?? ''),
                 heading: element.label ?? '',
                 showDeleteIcon: true,
                 onDelete: () {
@@ -333,7 +289,8 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
               return CustomCheckboxWidget(
                 options: element.options ?? [],
                 heading: element.label ?? '',
-                selectedValues: element.controller,
+                selectedValues:
+                    RxList<String>(((element.value ?? []) as List<String>)),
                 showDeleteIcon: true,
                 onDelete: () {
                   _task.value.formSections[sectionIndex].elements
@@ -343,6 +300,7 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
               );
             case MyCustomItemType.attachment:
               RxString fileName = ''.obs;
+              RxString imagePath = ''.obs;
               return Obx(
                 () => HeadingAndTextfield(
                   title: element.label ?? '',
@@ -351,22 +309,31 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                       : fileName.value,
                   readOnly: true,
                   onTap: () async {
+                    int? oldIndex;
+                    if (fileName.value != '') {
+                      final List<MyCustomElementModel> elements =
+                          _task.value.formSections[sectionIndex].elements;
+                      oldIndex = elements.indexOf(element);
+                    }
                     XFile? image = await ImagePicker().pickImage(
                       source: ImageSource.gallery,
                     );
-
                     if (image != null) {
                       fileName.value = image.name;
-                      // Check file extension
+                      imagePath.value = image.path;
                       String fileExtension =
                           image.name.split('.').last.toLowerCase();
                       if (fileExtension == 'png' ||
                           fileExtension == 'jpeg' ||
                           fileExtension == 'jpg') {
-                        // Uint8List imageBytes = await image.readAsBytes();
-                        // int i = _task.value.files.length;
-                        // _task.value.files.insert(i, imageBytes);
-                        // print('File added: ${image.path}');
+                        Uint8List imageBytes = await image.readAsBytes();
+                        if (oldIndex != null) {
+                          _attachments[oldIndex] = imageBytes;
+                        } else {
+                          int i = _attachments.length;
+                          _attachments.insert(i, imageBytes);
+                          element.value = i;
+                        }
                       } else {
                         Get.snackbar(
                             'Error.', 'Please select a PNG or JPEG file.');
@@ -377,7 +344,28 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                   onDelete: () {
                     _task.value.formSections[sectionIndex].elements
                         .remove(element);
+                    fileName.value = '';
+                    imagePath.value = '';
                     _task.refresh();
+                  },
+                  showEyeIcon: fileName.value != '',
+                  onEyeTap: () {
+                    if (imagePath.value.isNotEmpty) {
+                      Get.dialog(
+                        Dialog(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Image.file(File(imagePath.value)),
+                              TextButton(
+                                onPressed: () => Get.back(),
+                                child: const Text('Close'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
                   },
                 ),
               );
@@ -477,12 +465,13 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                 buttonText: 'Add Textfield',
                 onTap: () {
                   if (_formKey.currentState!.validate()) {
-                    MyCustomItemModel myCustomItemModel = MyCustomItemModel(
+                    MyCustomElementModel myCustomItemModel =
+                        MyCustomElementModel(
                       label: _hintTextController.text,
                       type: isTextArea
                           ? MyCustomItemType.textarea
                           : MyCustomItemType.textfield,
-                      controller: TextEditingController(),
+                      value: '',
                     );
                     _task.value.formSections[sectionIndex].elements
                         .add(myCustomItemModel);
@@ -541,10 +530,11 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                 buttonText: 'Add Attachment',
                 onTap: () {
                   if (_formKey.currentState!.validate()) {
-                    MyCustomItemModel myCustomItemModel = MyCustomItemModel(
+                    MyCustomElementModel myCustomItemModel =
+                        MyCustomElementModel(
                       label: _hintTextController.text,
                       type: MyCustomItemType.attachment,
-                      controller: Uint8List(0),
+                      value: null,
                     );
                     _task.value.formSections[sectionIndex].elements
                         .add(myCustomItemModel);
@@ -631,13 +621,13 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
             buttonText: isCheckbox ? 'Add Checkbox' : 'Add Radio Button',
             onTap: () {
               if (_formKey.currentState!.validate() && options.isNotEmpty) {
-                MyCustomItemModel myCustomItemModel = MyCustomItemModel(
+                MyCustomElementModel myCustomItemModel = MyCustomElementModel(
                   label: _hintTextController.text,
                   type: isCheckbox
                       ? MyCustomItemType.checkbox
                       : MyCustomItemType.radiobutton,
                   options: options,
-                  controller: isCheckbox ? RxList<String>([]) : RxString(''),
+                  value: isCheckbox ? <String>[] : '',
                 );
                 _task.value.formSections[sectionIndex].elements
                     .add(myCustomItemModel);
@@ -651,6 +641,31 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
         ],
       ),
     );
+  }
+
+  onSubmitTask(MyCustomTask e, List<Uint8List> attachments) async {
+    final urls = <String>[];
+    TaskResponse response =
+        await TaskService().addCustomTaskFiles(attachments: attachments);
+    if (response.isSuccess) {
+      urls.assignAll(response.data);
+      print(urls);
+      for (MyFormSection section in e.formSections) {
+        for (MyCustomElementModel element in section.elements) {
+          if (element.type == MyCustomItemType.attachment &&
+              element.value is int) {
+            element.value = urls[element.value];
+          }
+        }
+      }
+      final isSuccess =
+          await TaskService().createCustomTask(taskData: e.toMap());
+      if (isSuccess) {
+        Get.back();
+      }
+    } else {
+      urls.clear();
+    }
   }
 }
 

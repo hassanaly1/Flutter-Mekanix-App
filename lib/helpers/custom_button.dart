@@ -51,10 +51,10 @@ class CustomButton extends StatelessWidget {
                     )
                   : CustomTextWidget(
                       text: buttonText,
-                      fontSize: fontSize ?? 16,
+                      fontSize: fontSize ?? 14,
                       textColor:
                           usePrimaryColor ? Colors.black87 : Colors.white,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                       textAlign: TextAlign.center,
                     )),
         ));

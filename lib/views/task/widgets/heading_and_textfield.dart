@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_mekanix_app/helpers/custom_text.dart';
 import 'package:flutter_mekanix_app/helpers/reusable_textfield.dart';
 
@@ -17,6 +18,8 @@ class HeadingAndTextfield extends StatelessWidget {
   final String? Function(String?)? validator;
   final bool showDeleteIcon;
   final VoidCallback? onDelete;
+  final bool showEyeIcon;
+  final VoidCallback? onEyeTap;
 
   const HeadingAndTextfield({
     super.key,
@@ -34,6 +37,8 @@ class HeadingAndTextfield extends StatelessWidget {
     this.fontSize,
     this.showDeleteIcon = false,
     this.onDelete,
+    this.showEyeIcon = false,
+    this.onEyeTap,
   });
 
   @override
@@ -43,15 +48,30 @@ class HeadingAndTextfield extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CustomTextWidget(
-            text: title,
-            fontWeight: FontWeight.w500,
-            maxLines: 1,
-            fontSize: fontSize,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              CustomTextWidget(
+                text: title,
+                fontWeight: FontWeight.w500,
+                maxLines: 1,
+                fontSize: fontSize,
+              ),
+              Visibility(
+                visible: showEyeIcon,
+                child: InkWell(
+                  onTap: onEyeTap,
+                  child: const Icon(
+                    CupertinoIcons.eye_solid,
+                    color: Colors.grey,
+                  ),
+                ),
+              )
+            ],
           ),
           ReUsableTextField(
             showDeleteIcon: showDeleteIcon,
-            onDelete: onDelete,
+            onDelete: showDeleteIcon ? onDelete : null,
             controller: controller,
             onChanged: onChanged,
             onTap: onTap,
