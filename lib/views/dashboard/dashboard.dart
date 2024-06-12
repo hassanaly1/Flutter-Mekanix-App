@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mekanix_app/controllers/dashboard_controller.dart';
 import 'package:flutter_mekanix_app/controllers/universal_controller.dart';
 import 'package:flutter_mekanix_app/helpers/custom_text.dart';
+import 'package:flutter_mekanix_app/helpers/profile_avatar.dart';
 import 'package:flutter_mekanix_app/views/dashboard/right_side.dart';
 import 'package:flutter_mekanix_app/views/dashboard/side_menu.dart';
 import 'package:get/get.dart';
@@ -165,7 +166,7 @@ class HomeAppbar extends StatelessWidget {
                             onPressed: () {},
                             icon: const Icon(Icons.logout_rounded),
                           )
-                        : const CircleAvatar(backgroundColor: Colors.green),
+                        : ProfileAvatar(),
                   ),
                 ],
               ),

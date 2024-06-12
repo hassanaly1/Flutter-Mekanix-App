@@ -11,7 +11,17 @@ class DashboardController extends GetxController {
   var templateCount = 0.obs;
   var formCount = 0.obs;
   var engineCount = 0.obs;
-  var data = <String, dynamic>{}.obs;
+  var data = {
+    'template_analytics': [
+      {'count': 10},
+      {'count': 15},
+      {'count': 8},
+      {'count': 12},
+      {'count': 7},
+      {'count': 18},
+      {'count': 20},
+    ]
+  }.obs;
 
   final SideMenuController sideMenu = Get.put(SideMenuController());
   RxInt currentPage = 0.obs;

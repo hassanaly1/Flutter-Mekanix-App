@@ -105,7 +105,6 @@ class MyCustomElementModel {
   }
 
   static fromMap(Map<String, dynamic> map) {
-    print(map['options']);
     return MyCustomElementModel(
       label: map['label'] ?? '',
       options: map['options'] == null ? [] : List<String>.from(map['options']),

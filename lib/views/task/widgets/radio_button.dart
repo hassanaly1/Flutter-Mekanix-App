@@ -1,27 +1,30 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:flutter_mekanix_app/helpers/appcolors.dart';
 import 'package:flutter_mekanix_app/helpers/custom_text.dart';
 import 'package:flutter_mekanix_app/helpers/reusable_container.dart';
+import 'package:get/get.dart';
 
 class CustomRadioButton extends StatelessWidget {
   final String heading;
   final List<String> options;
-  final Rx<String?> selectedOption;
+  final String? selected;
   final bool showDeleteIcon;
   final VoidCallback? onDelete;
+  final Function(String) onChange;
 
   const CustomRadioButton({
     super.key,
-    required this.options,
-    required this.selectedOption,
     required this.heading,
+    required this.options,
+    required this.selected,
     this.showDeleteIcon = false,
     this.onDelete,
+    required this.onChange,
   });
 
   @override
   Widget build(BuildContext context) {
+    final selectedOption = Rx<String?>(selected);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -48,7 +51,8 @@ class CustomRadioButton extends StatelessWidget {
                         value: option,
                         groupValue: selectedOption.value,
                         onChanged: (value) {
-                          selectedOption.value = value.toString();
+                          selectedOption.value = value;
+                          if (value is String) onChange(value);
                         },
                       ),
                       CustomTextWidget(text: option),

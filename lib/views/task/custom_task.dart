@@ -8,6 +8,7 @@ import 'package:flutter_mekanix_app/helpers/custom_button.dart';
 import 'package:flutter_mekanix_app/helpers/custom_text.dart';
 import 'package:flutter_mekanix_app/helpers/reusable_container.dart';
 import 'package:flutter_mekanix_app/helpers/reusable_textfield.dart';
+import 'package:flutter_mekanix_app/helpers/toast.dart';
 import 'package:flutter_mekanix_app/helpers/validator.dart';
 import 'package:flutter_mekanix_app/models/custom_task_model.dart';
 import 'package:flutter_mekanix_app/services/task_service.dart';
@@ -42,6 +43,8 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
   final _hintTextController = TextEditingController();
   final _radioController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+
+  RxBool isLoading = false.obs;
 
   @override
   void initState() {
@@ -210,7 +213,7 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Visibility(
-                visible: !widget.isTemplate,
+                visible: widget.isTemplate ? false : widget.task == null,
                 child: CheckboxListTile(
                   contentPadding: EdgeInsets.zero,
                   activeColor: AppColors.blueTextColor,
@@ -219,6 +222,7 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                     text: 'Save as template for future use',
                     fontSize: 12.0,
                   ),
+                  subtitle: Text(widget.task == null ? 'NULL' : 'NO NULL'),
                   value: _isTemplate.value,
                   onChanged: (value) {
                     _isTemplate.value = !_isTemplate.value;
@@ -226,14 +230,28 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                   },
                 ),
               ),
-              CustomButton(
-                isLoading: false,
-                buttonText: _isTemplate.value ? 'Save as template' : 'Submit',
-                onTap: () {
-                  print(_task.value.toMap());
-                  print(_attachments.length);
-                  onSubmitTask(_task.value, _attachments);
-                },
+              Obx(
+                () => CustomButton(
+                  isLoading: isLoading.value,
+                  buttonText: widget.task == null ? 'Submit' : 'Update',
+                  // buttonText: _isTemplate.value ? 'Save as template' : 'Submit',
+                  onTap: () {
+                    if (widget.task == null) {
+                      debugPrint('SubmittingTask');
+                      print(_task.value.toMap());
+                      print(_attachments.length);
+                      onSubmitTask(_task.value, _attachments);
+                    } else {
+                      debugPrint('UpdatingTask');
+                      print(_task.value.toMap());
+                      print(_attachments.length);
+                      onUpdateTask(
+                        _task.value,
+                        _attachments,
+                      );
+                    }
+                  },
+                ),
               )
             ],
           ),
@@ -276,9 +294,10 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
             case MyCustomItemType.radiobutton:
               return CustomRadioButton(
                 options: element.options ?? [],
-                selectedOption: RxString(element.value ?? ''),
+                selected: element.value,
                 heading: element.label ?? '',
                 showDeleteIcon: true,
+                onChange: (String value) => element.value = value,
                 onDelete: () {
                   _task.value.formSections[sectionIndex].elements
                       .remove(element);
@@ -289,8 +308,8 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
               return CustomCheckboxWidget(
                 options: element.options ?? [],
                 heading: element.label ?? '',
-                selectedValues:
-                    RxList<String>(((element.value ?? []) as List<String>)),
+                selected: element.value?.cast<String>() ?? [],
+                onChange: (List<String> values) => element.value = values,
                 showDeleteIcon: true,
                 onDelete: () {
                   _task.value.formSections[sectionIndex].elements
@@ -644,27 +663,86 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
   }
 
   onSubmitTask(MyCustomTask e, List<Uint8List> attachments) async {
-    final urls = <String>[];
-    TaskResponse response =
-        await TaskService().addCustomTaskFiles(attachments: attachments);
-    if (response.isSuccess) {
-      urls.assignAll(response.data);
-      print(urls);
-      for (MyFormSection section in e.formSections) {
-        for (MyCustomElementModel element in section.elements) {
-          if (element.type == MyCustomItemType.attachment &&
-              element.value is int) {
-            element.value = urls[element.value];
+    try {
+      isLoading(true); // Set loading state to true
+      final urls = <String>[];
+      TaskResponse response =
+          await TaskService().addCustomTaskFiles(attachments: attachments);
+      if (response.isSuccess) {
+        urls.assignAll(response.data);
+        print(urls);
+        for (MyFormSection section in e.formSections) {
+          for (MyCustomElementModel element in section.elements) {
+            if (element.type == MyCustomItemType.attachment &&
+                element.value is int) {
+              element.value = urls[element.value];
+            }
           }
         }
+        final isSuccess =
+            await TaskService().createCustomTask(taskData: e.toMap());
+        if (isSuccess) {
+          ToastMessage.showToastMessage(
+              message: 'Task Created Successfully',
+              backgroundColor: Colors.green);
+          Get.back();
+        }
+      } else {
+        print("Error in onSubmitTask");
+        ToastMessage.showToastMessage(
+            message: 'Failed to create task, please try again',
+            backgroundColor: Colors.red);
+        urls.clear();
       }
-      final isSuccess =
-          await TaskService().createCustomTask(taskData: e.toMap());
-      if (isSuccess) {
-        Get.back();
+    } catch (e) {
+      print("Error in onSubmitTask: $e");
+      ToastMessage.showToastMessage(
+          message: 'Something went wrong, please try again',
+          backgroundColor: Colors.red);
+    } finally {
+      isLoading(false);
+    }
+  }
+
+  onUpdateTask(MyCustomTask e, List<Uint8List> attachments) async {
+    try {
+      isLoading(true);
+      final urls = <String>[];
+      TaskResponse response =
+          await TaskService().addCustomTaskFiles(attachments: attachments);
+      if (response.isSuccess) {
+        urls.assignAll(response.data);
+        print(urls);
+        for (MyFormSection section in e.formSections) {
+          for (MyCustomElementModel element in section.elements) {
+            if (element.type == MyCustomItemType.attachment &&
+                element.value is int) {
+              element.value = urls[element.value];
+            }
+          }
+        }
+        final isSuccess = await TaskService()
+            .updateCustomTask(taskData: e.toMap(), taskId: e.id ?? '');
+        if (isSuccess) {
+          ToastMessage.showToastMessage(
+              message: 'Task Updated Successfully',
+              backgroundColor: Colors.green);
+          Get.back();
+        }
+      } else {
+        print("Error in onUpdateTask");
+        ToastMessage.showToastMessage(
+            message: 'Failed to update task, please try again',
+            backgroundColor: Colors.red);
+        urls.clear();
       }
-    } else {
-      urls.clear();
+    } catch (e) {
+      print("Error in onUpdateTask: $e");
+      ToastMessage.showToastMessage(
+          message: 'Something went wrong, please try again',
+          backgroundColor: Colors.red);
+    } finally {
+      isLoading(false); // Set loading state to false
     }
   }
 }

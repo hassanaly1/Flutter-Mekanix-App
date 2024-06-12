@@ -10,6 +10,7 @@ import 'package:flutter_mekanix_app/helpers/reusable_container.dart';
 import 'package:flutter_mekanix_app/helpers/tabbar.dart';
 import 'package:flutter_mekanix_app/helpers/toast.dart';
 import 'package:flutter_mekanix_app/models/custom_task_model.dart';
+import 'package:flutter_mekanix_app/services/engine_service.dart';
 import 'package:flutter_mekanix_app/views/task/custom_task.dart';
 import 'package:flutter_mekanix_app/views/task/scan_qrcode.dart';
 import 'package:flutter_mekanix_app/views/task/widgets/heading_and_textfield.dart';
@@ -73,11 +74,14 @@ class _TaskScreenState extends State<TaskScreen> {
                       flexibleSpace: ListView(
                         physics: const NeverScrollableScrollPhysics(),
                         children: [
-                          TopSection(
-                            sideMenuController: widget.sideMenu,
-                            controller: controller,
-                            reportNameController: reportNameController,
-                            universalController: widget.universalController,
+                          Obx(
+                            () => TopSection(
+                              sideMenuController: widget.sideMenu,
+                              controller: controller,
+                              reportNameController: reportNameController,
+                              universalController: widget.universalController,
+                              currentPage: currentPage.value,
+                            ),
                           )
                         ],
                       ),
@@ -101,7 +105,7 @@ class _TaskScreenState extends State<TaskScreen> {
                     //     }
                     //   },
                     // ),
-                    CustomTabBar(
+                    const CustomTabBar(
                       // onTap: (val) {
                       //   currentPage.value = val;
                       // },
@@ -140,6 +144,7 @@ class TopSection extends StatelessWidget {
   final SideMenuController sideMenuController;
   final TextEditingController reportNameController;
   final UniversalController universalController;
+  final int currentPage;
 
   const TopSection({
     super.key,
@@ -147,6 +152,7 @@ class TopSection extends StatelessWidget {
     required this.controller,
     required this.reportNameController,
     required this.universalController,
+    required this.currentPage,
   });
 
   @override
@@ -185,7 +191,8 @@ class TopSection extends StatelessWidget {
                             context: context,
                             reportNameController: reportNameController,
                             controller: controller,
-                            universalController: universalController);
+                            universalController: universalController,
+                            currentPage: currentPage);
                       },
                       icon: const Icon(FontAwesomeIcons.circlePlus),
                     ),
@@ -284,6 +291,7 @@ class CustomPopup {
     required TextEditingController reportNameController,
     required CustomTaskController controller,
     required UniversalController universalController,
+    required int currentPage,
   }) {
     showCustomPopup(
       context: context,
@@ -298,7 +306,7 @@ class CustomPopup {
           ),
           const SizedBox(height: 24.0),
           HeadingAndTextfield(
-            title: 'Enter Report Name',
+            title: 'Enter ${currentPage == 0 ? 'Report' : 'Template'} Name',
             fontSize: 12.0,
             controller: reportNameController,
           ),
@@ -336,36 +344,36 @@ class CustomPopup {
                     ? controller.engineBrandName.value
                     : 'Select Engine Brand',
                 onChanged: (value) async {
-                  // try {
-                  //   final result = await EngineService()
-                  //       .getEngineData(engineName: value?.name ?? '');
-                  //
-                  //   if (result['success']) {
-                  //     final engineData = result['data'];
-                  //     final engineId = engineData['_id'];
-                  //     final engineName = engineData['name'];
-                  //
-                  //     controller.engineBrandName.value = engineName ?? '';
-                  //     controller.engineBrandId.value = engineId;
-                  //     debugPrint('EngineId: ${controller.engineBrandId.value}');
-                  //     debugPrint(
-                  //         'EngineName: ${controller.engineBrandName.value}');
-                  //   } else {
-                  //     final errorMessage = result['message'];
-                  //     debugPrint('Failed to fetch engine data');
-                  //     debugPrint('ErrorData: ${result['data']}');
-                  //     debugPrint('ErrorMessage: $errorMessage');
-                  //
-                  //     ToastMessage.showToastMessage(
-                  //         message: errorMessage,
-                  //         backgroundColor: AppColors.blueTextColor);
-                  //   }
-                  // } catch (e) {
-                  //   debugPrint('An error occurred: $e');
-                  //   ToastMessage.showToastMessage(
-                  //       message: 'An error occurred, please try again',
-                  //       backgroundColor: AppColors.blueTextColor);
-                  // }
+                  try {
+                    final result = await EngineService()
+                        .getEngineData(engineName: value?.name ?? '');
+
+                    if (result['success']) {
+                      final engineData = result['data'];
+                      final engineId = engineData['_id'];
+                      final engineName = engineData['name'];
+
+                      controller.engineBrandName.value = engineName ?? '';
+                      controller.engineBrandId.value = engineId;
+                      debugPrint('EngineId: ${controller.engineBrandId.value}');
+                      debugPrint(
+                          'EngineName: ${controller.engineBrandName.value}');
+                    } else {
+                      final errorMessage = result['message'];
+                      debugPrint('Failed to fetch engine data');
+                      debugPrint('ErrorData: ${result['data']}');
+                      debugPrint('ErrorMessage: $errorMessage');
+
+                      ToastMessage.showToastMessage(
+                          message: errorMessage,
+                          backgroundColor: AppColors.blueTextColor);
+                    }
+                  } catch (e) {
+                    debugPrint('An error occurred: $e');
+                    ToastMessage.showToastMessage(
+                        message: 'An error occurred, please try again',
+                        backgroundColor: AppColors.blueTextColor);
+                  }
                 },
               ),
             ),
@@ -373,37 +381,27 @@ class CustomPopup {
           CustomButton(
             buttonText: 'Create',
             onTap: () {
-              Get.back();
-              Get.to(
-                () => CustomTaskScreen(
-                  reportName: reportNameController.text.trim(),
-                  isTemplate: false,
-                ),
-              );
+              if (reportNameController.text.isNotEmpty) {
+                if (controller.engineBrandName.value.isNotEmpty &&
+                    controller.engineBrandId.value.isNotEmpty) {
+                  Get.back();
+                  Get.to(
+                    () => CustomTaskScreen(
+                      reportName: reportNameController.text.trim(),
+                      isTemplate: currentPage == 0 ? false : true,
+                    ),
+                  );
+                } else {
+                  ToastMessage.showToastMessage(
+                      message: 'Please Select Engine from the Dropdown.',
+                      backgroundColor: AppColors.blueTextColor);
+                }
+              } else {
+                ToastMessage.showToastMessage(
+                    message: 'Please Enter Report Name.',
+                    backgroundColor: AppColors.blueTextColor);
+              }
             },
-            // onTap: () {
-            //   if (reportNameController.text.isNotEmpty) {
-            //     if (controller.engineBrandName.value.isNotEmpty &&
-            //         controller.engineBrandId.value.isNotEmpty) {
-            //       Get.back();
-            //       Get.to(
-            //         () => CustomTaskScreen(
-            //           controller: controller,
-            //           reportName: reportNameController.text.trim(),
-            //           isTemplateTask: false,
-            //         ),
-            //       );
-            //     } else {
-            //       ToastMessage.showToastMessage(
-            //           message: 'Please Select Engine from the Dropdown.',
-            //           backgroundColor: AppColors.blueTextColor);
-            //     }
-            //   } else {
-            //     ToastMessage.showToastMessage(
-            //         message: 'Please Enter Report Name.',
-            //         backgroundColor: AppColors.blueTextColor);
-            //   }
-            // },
             isLoading: false,
           ),
         ],

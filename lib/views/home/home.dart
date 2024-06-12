@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mekanix_app/helpers/custom_text.dart';
 import 'package:flutter_mekanix_app/helpers/reusable_container.dart';
+import 'package:flutter_mekanix_app/views/home/barchart.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -60,16 +61,22 @@ class _HomeScreenState extends State<HomeScreen>
                       onTap: () => _pageController.animateToPage(0,
                           duration: const Duration(milliseconds: 300),
                           curve: Curves.easeInOut),
+                      title: 'Submitted Tasks',
+                      value: '34',
                     ),
                     NewWidget(
                       onTap: () => _pageController.animateToPage(1,
                           duration: const Duration(milliseconds: 300),
                           curve: Curves.easeInOut),
+                      title: 'Total Templates',
+                      value: '12',
                     ),
                     NewWidget(
                       onTap: () => _pageController.animateToPage(2,
                           duration: const Duration(milliseconds: 300),
                           curve: Curves.easeInOut),
+                      title: 'Total Engines',
+                      value: '8',
                     ),
                   ],
                 ),
@@ -79,10 +86,10 @@ class _HomeScreenState extends State<HomeScreen>
                 child: PageView(
                   controller: _pageController,
                   onPageChanged: _onPageChanged,
-                  children: const [
-                    TabView1(),
-                    TabView1(),
-                    TabView1(),
+                  children: [
+                    TabView1(pageController: _pageController),
+                    TabView1(pageController: _pageController),
+                    TabView1(pageController: _pageController),
                   ],
                 ),
               ),
@@ -95,9 +102,15 @@ class _HomeScreenState extends State<HomeScreen>
 }
 
 class NewWidget extends StatelessWidget {
+  final String title;
+  final String value;
   final VoidCallback onTap;
 
-  const NewWidget({super.key, required this.onTap});
+  const NewWidget(
+      {super.key,
+      required this.onTap,
+      required this.title,
+      required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -105,18 +118,18 @@ class NewWidget extends StatelessWidget {
       padding: const EdgeInsets.all(8.0),
       child: InkWell(
         onTap: onTap,
-        child: const ReUsableContainer(
+        child: ReUsableContainer(
           height: 100,
           width: 200,
           child: Padding(
-            padding: EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(8.0),
             child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CustomTextWidget(text: 'Submitted Tasks'),
+                  CustomTextWidget(text: title),
                   CustomTextWidget(
-                    text: '230',
+                    text: value,
                     fontSize: 20,
                     fontWeight: FontWeight.w600,
                   ),
@@ -131,10 +144,12 @@ class NewWidget extends StatelessWidget {
 }
 
 class TabView1 extends StatelessWidget {
-  const TabView1({super.key});
+  final PageController pageController;
+
+  const TabView1({super.key, required this.pageController});
 
   @override
   Widget build(BuildContext context) {
-    return Container();
+    return const MyBarChart();
   }
 }

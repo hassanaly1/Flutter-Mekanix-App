@@ -175,4 +175,38 @@ class TaskService {
 
     return isSuccess;
   }
+
+  Future<bool> updateCustomTask({
+    required Map<String, dynamic> taskData,
+    required String taskId,
+  }) async {
+    debugPrint('AddingCustomTask');
+    var token = storage.read('token');
+    var headers = {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    };
+    debugPrint('Updating task with id: $taskId');
+    try {
+      final response = await http.put(
+        Uri.parse(
+            '${ApiEndPoints.baseUrl}${ApiEndPoints.updateCustomTaskUrl}?id=$taskId'),
+        headers: headers,
+        body: jsonEncode(taskData),
+      );
+
+      if (response.statusCode == 201) {
+        final responseData = jsonDecode(response.body);
+        debugPrint(responseData['message']);
+        return responseData['status'] == 'success';
+      } else {
+        debugPrint(
+            'Failed to update task, status code: ${response.statusCode} ${response.reasonPhrase}');
+        return false;
+      }
+    } catch (e) {
+      debugPrint('Error updating task: $e');
+      return false;
+    }
+  }
 }

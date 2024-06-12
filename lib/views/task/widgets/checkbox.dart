@@ -6,22 +6,24 @@ import 'package:get/get.dart';
 
 class CustomCheckboxWidget extends StatelessWidget {
   final String heading;
-  final List<String> options;
-  final RxList<String> selectedValues;
+  final List<String> options, selected;
   final bool showDeleteIcon;
   final VoidCallback? onDelete;
+  final Function(List<String>) onChange;
 
   const CustomCheckboxWidget({
     super.key,
     required this.options,
-    required this.selectedValues,
+    required this.selected,
     required this.heading,
+    required this.onChange,
     this.showDeleteIcon = false,
     this.onDelete,
   });
 
   @override
   Widget build(BuildContext context) {
+    var selectedValues = <String>[...selected].obs;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -45,7 +47,10 @@ class CustomCheckboxWidget extends StatelessWidget {
                         value: selectedValues.contains(option),
                         onChanged: (bool? value) {
                           if (value != null) {
-                            toggleCheckbox(option, selectedValues);
+                            selectedValues.contains(option)
+                                ? selectedValues.remove(option)
+                                : selectedValues.add(option);
+                            onChange(selectedValues);
                           }
                         },
                       ))
@@ -55,13 +60,5 @@ class CustomCheckboxWidget extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  void toggleCheckbox(String value, RxList<String> list) {
-    if (list.contains(value)) {
-      list.remove(value);
-    } else {
-      list.add(value);
-    }
   }
 }

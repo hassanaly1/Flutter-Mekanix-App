@@ -16,8 +16,12 @@ class ApiEndPoints {
   static String createCustomTaskUrl = '/api/formbuilder/save-custom-form';
   static String addCustomTaskFilesUrl = '/api/formbuilder/upload-files';
   static String getAllCustomTaskUrl = '/api/formbuilder/getcustomform';
-  static String updateCustomTaskUrl = '/api/formbuilder/updatecustomform';
+  static String updateCustomTaskUrl = '/api/formbuilder/update-custom-form';
   static String deleteCustomTaskUrl = '/api/formbuilder/delete-custom-form';
+
+  //Analytics
+  static String getAnalyticsUrl =
+      '/api/formbuilder/total-counts-for-user-activites';
 
   //Engine
   static String addEngineUrl = '/api/engine/createenginebrand';
