@@ -166,7 +166,9 @@ class HomeAppbar extends StatelessWidget {
                             onPressed: () {},
                             icon: const Icon(Icons.logout_rounded),
                           )
-                        : ProfileAvatar(),
+                        : InkWell(
+                            onTap: () => sideMenu.changePage(4),
+                            child: const ProfileAvatar()),
                   ),
                 ],
               ),

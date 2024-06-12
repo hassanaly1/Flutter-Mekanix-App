@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_mekanix_app/controllers/custom_task_controller.dart';
 import 'package:flutter_mekanix_app/helpers/storage_helper.dart';
 import 'package:flutter_mekanix_app/models/custom_task_model.dart';
 import 'package:flutter_mekanix_app/services/api_endpoints.dart';
@@ -35,6 +36,8 @@ class TaskService {
       if (response.statusCode == 201) {
         final responseData = jsonDecode(response.body);
         debugPrint(responseData['message']);
+        CustomTaskController().getAllCustomTasks(page: 1);
+        CustomTaskController().getAllCustomTasks(page: 1, isTemplate: true);
         return responseData['status'] == 'success';
       } else {
         debugPrint('Failed to add task, status code: ${response.statusCode}');

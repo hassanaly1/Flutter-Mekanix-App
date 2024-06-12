@@ -142,16 +142,17 @@ class MyBarChartState extends State<MyBarChart> {
             return BarTooltipItem(
               '$weekDay\n',
               const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  fontFamily: 'Poppins'),
               children: <TextSpan>[
                 TextSpan(
                   text: (rod.toY - 1).toString(),
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
+                    fontFamily: 'Poppins',
                     fontWeight: FontWeight.w500,
                   ),
                 ),

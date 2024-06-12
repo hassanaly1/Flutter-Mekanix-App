@@ -42,6 +42,8 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
   final _attachments = <Uint8List>[];
   final _hintTextController = TextEditingController();
   final _radioController = TextEditingController();
+  final _customerNameController = TextEditingController();
+  final _customerEmailController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
   RxBool isLoading = false.obs;
@@ -51,6 +53,8 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
     _task = Rx<MyCustomTask>(widget.task ??
         MyCustomTask(
           name: widget.reportName,
+          customerName: _customerNameController.text.trim(),
+          customerEmail: _customerEmailController.text.trim(),
           formSections: <MyFormSection>[],
           isForm: _isForm.value,
           isTemplate: _isTemplate.value,
@@ -234,17 +238,47 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                 () => CustomButton(
                   isLoading: isLoading.value,
                   buttonText: widget.task == null ? 'Submit' : 'Update',
-                  // buttonText: _isTemplate.value ? 'Save as template' : 'Submit',
                   onTap: () {
                     if (widget.task == null) {
-                      debugPrint('SubmittingTask');
-                      print(_task.value.toMap());
-                      print(_attachments.length);
-                      onSubmitTask(_task.value, _attachments);
+                      showCustomPopup(
+                        context: context,
+                        width: context.width * 0.6,
+                        widget: Form(
+                          child: Column(
+                            children: [
+                              const CustomTextWidget(
+                                text:
+                                    'Enter the name of the Customer you want to send this task as report via email.',
+                                fontSize: 10.0,
+                                maxLines: 5,
+                                textAlign: TextAlign.center,
+                              ),
+                              HeadingAndTextfield(
+                                title: 'Enter Customer Name',
+                                controller: _customerNameController,
+                                hintText: 'Customer Name',
+                              ),
+                              HeadingAndTextfield(
+                                title: 'Enter Customer Email',
+                                controller: _customerEmailController,
+                                hintText: 'Customer Email',
+                              ),
+                              Obx(
+                                () => CustomButton(
+                                  buttonText: 'Send Report',
+                                  onTap: () {
+                                    debugPrint('SubmittingTask');
+                                    onSubmitTask(_task.value, _attachments);
+                                  },
+                                  isLoading: isLoading.value,
+                                ),
+                              )
+                            ],
+                          ),
+                        ),
+                      );
                     } else {
                       debugPrint('UpdatingTask');
-                      print(_task.value.toMap());
-                      print(_attachments.length);
                       onUpdateTask(
                         _task.value,
                         _attachments,
@@ -252,7 +286,7 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                     }
                   },
                 ),
-              )
+              ),
             ],
           ),
         ],
@@ -685,6 +719,8 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
           ToastMessage.showToastMessage(
               message: 'Task Created Successfully',
               backgroundColor: Colors.green);
+
+          Get.back();
           Get.back();
         }
       } else {
@@ -749,7 +785,6 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
 
 void showCustomPopup(
     {required BuildContext context,
-    SideMenuController? sideMenu,
     required double? width,
     required Widget widget}) {
   showGeneralDialog(

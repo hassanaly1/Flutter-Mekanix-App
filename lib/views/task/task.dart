@@ -219,69 +219,88 @@ class TaskListView extends StatelessWidget {
     required this.controller,
   });
 
+  Future<void> _refreshTasks() {
+    return isTemplate
+        ? controller.getAllCustomTasks(page: 1, isTemplate: true)
+        : controller.getAllCustomTasks(page: 1);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Obx(
-      () => controller.isTasksAreLoading.value
-          ? const Center(child: CircularProgressIndicator())
-          : tasks.isEmpty
-              ? Center(
-                  heightFactor: 10.0,
-                  child: CustomTextWidget(
-                    text: isTemplate
-                        ? 'No Templates Available'
-                        : 'No Submitted Tasks Available',
-                  ),
-                )
-              : ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: tasks.length,
-                  itemBuilder: (context, index) {
-                    final task = tasks[index];
-                    return Padding(
-                      padding: EdgeInsets.symmetric(
-                          horizontal: context.width * 0.04),
-                      child: ReUsableContainer(
-                        child: ListTile(
-                          onTap: () {
-                            Get.to(
-                              () => CustomTaskScreen(
-                                reportName: task.name,
-                                task: task,
-                                isTemplate: task.isTemplate,
-                              ),
-                            );
-                          },
-                          trailing: InkWell(
-                            onTap: () {
-                              _showDeletePopup(
-                                  context: context,
-                                  controller: controller,
-                                  id: task.id ?? '');
-                            },
-                            child: const Icon(
-                              Icons.remove_circle,
-                              color: Colors.red,
-                            ),
-                          ),
-                          leading: CustomTextWidget(
-                            text: '${index + 1}'.toString(),
-                            fontSize: 16.0,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          title: CustomTextWidget(
-                            text: task.name,
-                            fontSize: 16.0,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          titleAlignment: ListTileTitleAlignment.center,
+    return Obx(() {
+      if (controller.isTasksAreLoading.value) {
+        return const Center(
+          child: SpinKitRing(
+            lineWidth: 2.0,
+            color: Colors.black87,
+            size: 30.0,
+          ),
+        );
+      } else if (tasks.isEmpty) {
+        return Center(
+          heightFactor: 10.0,
+          child: CustomTextWidget(
+            text: isTemplate
+                ? 'No Templates Available'
+                : 'No Submitted Tasks Available',
+          ),
+        );
+      } else {
+        return RefreshIndicator(
+          onRefresh: _refreshTasks,
+          color: AppColors.primaryColor,
+          backgroundColor: AppColors.secondaryColor,
+          triggerMode: RefreshIndicatorTriggerMode.onEdge,
+          child: ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: tasks.length,
+            itemBuilder: (context, index) {
+              final task = tasks[index];
+              return Padding(
+                padding: EdgeInsets.symmetric(horizontal: context.width * 0.04),
+                child: ReUsableContainer(
+                  child: ListTile(
+                    onTap: () {
+                      Get.to(
+                        () => CustomTaskScreen(
+                          reportName: task.name,
+                          task: task,
+                          isTemplate: task.isTemplate,
                         ),
+                      );
+                    },
+                    trailing: InkWell(
+                      onTap: () {
+                        _showDeletePopup(
+                            context: context,
+                            controller: controller,
+                            id: task.id ?? '');
+                      },
+                      child: const Icon(
+                        Icons.remove_circle,
+                        color: Colors.red,
                       ),
-                    );
-                  },
+                    ),
+                    leading: CustomTextWidget(
+                      text: '${index + 1}'.toString(),
+                      fontSize: 16.0,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    title: CustomTextWidget(
+                      text: task.name,
+                      fontSize: 16.0,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    titleAlignment: ListTileTitleAlignment.center,
+                  ),
                 ),
-    );
+              );
+            },
+          ),
+        );
+      }
+    });
   }
 }
 
