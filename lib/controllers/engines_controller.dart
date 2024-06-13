@@ -38,12 +38,12 @@ class EnginesController extends GetxController {
 
   @override
   onInit() {
-    getAllEngines();
+    getAllEngines(page: 1);
     scrollController.addListener(() {
       if (scrollController.position.pixels ==
           scrollController.position.maxScrollExtent) {
         if (!isLoading.value) {
-          _loadNextPage();
+          _loadNextPageEngines();
         }
       }
     });
@@ -59,20 +59,37 @@ class EnginesController extends GetxController {
     super.dispose();
   }
 
-  void _loadNextPage() async {
+  void _loadNextPageEngines() async {
     debugPrint('Loading Next Page ${_currentPage.value} Engines');
     isLoading.value = true;
+
     List<EngineModel> nextPageEngines = await engineService.getAllEngines(
-      page: _currentPage.value + 1,
+      page: _currentPage.value,
       token: storage.read('token'),
     );
 
-    fetchedEngines.addAll(nextPageEngines);
-    _currentPage.value++;
+    // Create a Set of existing engine IDs to avoid duplicates
+    Set<String?> existingEngineIds =
+        fetchedEngines.map((engine) => engine.id).toSet();
+
+    // Add only unique engines
+    for (var engine in nextPageEngines) {
+      if (!existingEngineIds.contains(engine.id)) {
+        fetchedEngines.add(engine);
+        existingEngineIds
+            .add(engine.id); // Update the set with the new engine ID
+      }
+    }
+
+    // Only increment the page if we received a full page of engines
+    if (nextPageEngines.length >= 10) {
+      _currentPage.value++;
+    }
+
     isLoading.value = false;
   }
 
-  Future<void> getAllEngines({String? searchName}) async {
+  Future<void> getAllEngines({String? searchName, int? page}) async {
     try {
       isEnginesAreLoading.value = true;
       _currentPage.value = 1;
@@ -80,11 +97,10 @@ class EnginesController extends GetxController {
       fetchedEngines.value = await engineService.getAllEngines(
         searchString: searchName ?? '',
         token: storage.read('token'),
-        page: _currentPage.value,
+        page: page ?? _currentPage.value,
       );
       universalController.engines = fetchedEngines;
       debugPrint('EnginesCount: ${universalController.engines.length}');
-      isEnginesAreLoading.value = false;
     } catch (e) {
       debugPrint('Error fetching engines: $e');
     } finally {
@@ -92,7 +108,6 @@ class EnginesController extends GetxController {
     }
   }
 
-  // Function to pick an image
   Future<void> pickImage() async {
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
 
@@ -105,7 +120,6 @@ class EnginesController extends GetxController {
     }
   }
 
-  // Function to update an image
   Future<void> updateImage(EngineModel model) async {
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
 
@@ -113,6 +127,7 @@ class EnginesController extends GetxController {
       engineImage = image;
       engineImageUrl.value = image.path;
       engineImageInBytes = (await engineImage?.readAsBytes())!;
+      print('EngineImageInBytes: $engineImageInBytes');
       engineService.updateEngineImage(
           engineImageInBytes: engineImageInBytes,
           engineId: model.id ?? '',
@@ -146,19 +161,20 @@ class EnginesController extends GetxController {
           isLoading.value = false;
           pageController.nextPage(
               duration: const Duration(milliseconds: 300), curve: Curves.ease);
-          await getAllEngines();
+
           isQrCodeGenerated.value = true;
           engineType.value = 'Generator';
+          getAllEngines();
         } else {
           ToastMessage.showToastMessage(
               message: 'Something went wrong, please try again',
               backgroundColor: Colors.red);
-          isLoading.value = false;
         }
       } catch (e) {
         ToastMessage.showToastMessage(
             message: 'Something went wrong, please try again',
             backgroundColor: Colors.red);
+      } finally {
         isLoading.value = false;
       }
     }
@@ -198,8 +214,9 @@ class EnginesController extends GetxController {
 
   Future<void> deleteEngine({required EngineModel engineModel}) async {
     debugPrint('DeleteEngineFunctionCalled');
-    isLoading.value = true;
+
     try {
+      isLoading.value = true;
       var deletedEngineData = EngineModel(
         id: engineModel.id,
         userId: storage.read('user_info')['_id'],
@@ -212,13 +229,13 @@ class EnginesController extends GetxController {
         engineModel: deletedEngineData,
         token: storage.read('token'),
       );
-      getAllEngines();
-      isLoading.value = false;
+
       if (success) {
         ToastMessage.showToastMessage(
           message: 'Engine Deleted Successfully',
           backgroundColor: Colors.green,
         );
+        getAllEngines();
         Get.back();
       } else {
         ToastMessage.showToastMessage(
@@ -227,14 +244,13 @@ class EnginesController extends GetxController {
         );
       }
     } catch (e) {
-      isLoading.value = false;
       ToastMessage.showToastMessage(
         message: 'Something went wrong, please try again',
         backgroundColor: Colors.red,
       );
       debugPrint('Error deleting engine: $e');
     } finally {
-      // isLoading.value = false;
+      isLoading.value = false;
     }
   }
 

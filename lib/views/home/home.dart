@@ -1,8 +1,12 @@
-import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_mekanix_app/controllers/universal_controller.dart';
+import 'package:flutter_mekanix_app/helpers/appcolors.dart';
 import 'package:flutter_mekanix_app/helpers/custom_text.dart';
 import 'package:flutter_mekanix_app/helpers/reusable_container.dart';
+import 'package:flutter_mekanix_app/models/user_activities.dart';
 import 'package:flutter_mekanix_app/views/home/barchart.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get/get.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -18,10 +22,12 @@ class _HomeScreenState extends State<HomeScreen>
   final PageController _pageController = PageController();
   final CarouselController _carouselController = CarouselController();
   final currentIndex = 0.obs;
+  late UniversalController controller;
 
   @override
   void initState() {
     super.initState();
+    controller = Get.find();
     _tabController = TabController(length: 3, vsync: this);
   }
 
@@ -58,90 +64,107 @@ class _HomeScreenState extends State<HomeScreen>
             backgroundColor: Colors.transparent,
             elevation: 0,
           ),
-          body: Column(
-            children: [
-              context.isPortrait
-                  ? CarouselSlider(
-                      items: [
-                        NewWidget(
-                          onTap: () => _pageController.animateToPage(0,
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeInOut),
-                          title: 'Submitted Tasks',
-                          value: '34',
-                        ),
-                        NewWidget(
-                          onTap: () => _pageController.animateToPage(1,
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeInOut),
-                          title: 'Total Templates',
-                          value: '12',
-                        ),
-                        NewWidget(
-                          onTap: () => _pageController.animateToPage(2,
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeInOut),
-                          title: 'Total Engines',
-                          value: '8',
-                        ),
-                      ],
-                      options: CarouselOptions(
-                        height: 140,
-                        enlargeCenterPage: true,
-                        autoPlay: false,
-                        enableInfiniteScroll: true,
-                        viewportFraction: 0.5,
-                        onPageChanged: (index, reason) {
-                          if (reason == CarouselPageChangedReason.manual) {
-                            _onCarouselPageChanged(index, reason);
-                          }
-                        },
-                      ),
-                      carouselController: _carouselController,
-                    )
-                  : SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
+          body: Obx(
+            () => Column(
+              children: [
+                context.isPortrait
+                    ? CarouselSlider(
+                        items: [
                           NewWidget(
                             onTap: () => _pageController.animateToPage(0,
                                 duration: const Duration(milliseconds: 300),
                                 curve: Curves.easeInOut),
                             title: 'Submitted Tasks',
-                            value: '34',
+                            isLoading: controller.isFormsAreLoading.value,
+                            value: controller.formCount.toString(),
                           ),
                           NewWidget(
                             onTap: () => _pageController.animateToPage(1,
                                 duration: const Duration(milliseconds: 300),
                                 curve: Curves.easeInOut),
+                            isLoading: controller.isTemplatesAreLoading.value,
                             title: 'Total Templates',
-                            value: '12',
+                            value: controller.templateCount.toString(),
                           ),
                           NewWidget(
                             onTap: () => _pageController.animateToPage(2,
                                 duration: const Duration(milliseconds: 300),
                                 curve: Curves.easeInOut),
                             title: 'Total Engines',
-                            value: '8',
+                            isLoading: controller.isEnginesAreLoading.value,
+                            value: controller.engineCount.toString(),
                           ),
                         ],
+                        options: CarouselOptions(
+                          height: 140,
+                          enlargeCenterPage: true,
+                          autoPlay: false,
+                          enableInfiniteScroll: false,
+                          viewportFraction: 0.65,
+                          onPageChanged: (index, reason) {
+                            if (reason == CarouselPageChangedReason.manual) {
+                              _onCarouselPageChanged(index, reason);
+                            }
+                          },
+                        ),
+                        carouselController: _carouselController,
+                      )
+                    : SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            NewWidget(
+                              onTap: () => _pageController.animateToPage(0,
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut),
+                              title: 'Submitted Tasks',
+                              value: controller.formCount.toString(),
+                              isLoading: controller.isFormsAreLoading.value,
+                            ),
+                            NewWidget(
+                              onTap: () => _pageController.animateToPage(1,
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut),
+                              title: 'Total Templates',
+                              value: controller.templateCount.toString(),
+                              isLoading: controller.isTemplatesAreLoading.value,
+                            ),
+                            NewWidget(
+                              onTap: () => _pageController.animateToPage(2,
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut),
+                              title: 'Total Engines',
+                              value: controller.engineCount.toString(),
+                              isLoading: controller.isEnginesAreLoading.value,
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-              const Divider(),
-              Expanded(
-                child: PageView(
-                  controller: _pageController,
-                  physics: const NeverScrollableScrollPhysics(),
-                  onPageChanged: (index) => _onPageChanged(index),
-                  children: [
-                    TabView1(pageController: _pageController),
-                    TabView1(pageController: _pageController),
-                    TabView1(pageController: _pageController),
-                  ],
+                const Divider(),
+                Expanded(
+                  child: PageView(
+                    controller: _pageController,
+                    physics: const NeverScrollableScrollPhysics(),
+                    onPageChanged: (index) => _onPageChanged(index),
+                    children: [
+                      TabView1(
+                          title: 'Tasks',
+                          pageController: _pageController,
+                          data: controller.formAnalytics),
+                      TabView1(
+                          title: 'Templates',
+                          pageController: _pageController,
+                          data: controller.templateAnalytics),
+                      TabView1(
+                          title: 'Engines',
+                          pageController: _pageController,
+                          data: controller.engineAnalytics),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -160,12 +183,14 @@ class NewWidget extends StatelessWidget {
   final String title;
   final String value;
   final VoidCallback onTap;
+  final bool isLoading;
 
   const NewWidget(
       {super.key,
       required this.onTap,
       required this.title,
-      required this.value});
+      required this.value,
+      required this.isLoading});
 
   @override
   Widget build(BuildContext context) {
@@ -180,11 +205,16 @@ class NewWidget extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               CustomTextWidget(text: title, fontSize: 18.0),
-              CustomTextWidget(
-                text: value,
-                fontSize: 26,
-                fontWeight: FontWeight.w600,
-              ),
+              isLoading
+                  ? SpinKitThreeBounce(
+                      color: AppColors.secondaryColor,
+                      size: 25.0,
+                    )
+                  : CustomTextWidget(
+                      text: value,
+                      fontSize: 26,
+                      fontWeight: FontWeight.w600,
+                    ),
             ],
           ),
         ),
@@ -194,12 +224,18 @@ class NewWidget extends StatelessWidget {
 }
 
 class TabView1 extends StatelessWidget {
+  final String title;
   final PageController pageController;
+  final List<Analytic> data;
 
-  const TabView1({super.key, required this.pageController});
+  const TabView1(
+      {super.key,
+      required this.pageController,
+      required this.data,
+      required this.title});
 
   @override
   Widget build(BuildContext context) {
-    return const MyBarChart();
+    return MyBarChart(data: data, title: title);
   }
 }

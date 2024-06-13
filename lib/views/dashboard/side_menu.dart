@@ -1,17 +1,24 @@
 import 'package:easy_sidemenu/easy_sidemenu.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_mekanix_app/controllers/universal_controller.dart';
 import 'package:flutter_mekanix_app/helpers/appcolors.dart';
 import 'package:flutter_mekanix_app/helpers/reusable_container.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
 
 class SideMenuCard extends StatelessWidget {
-  const SideMenuCard(
-      {super.key, required this.sideMenu, required this.scaffoldKey});
+  SideMenuCard(
+      {super.key,
+      required this.sideMenu,
+      required this.scaffoldKey,
+      required this.controller});
 
+  final UniversalController controller;
   final SideMenuController sideMenu;
   final GlobalKey<ScaffoldState> scaffoldKey;
+
+  // final EnginesController _enginesController = Get.find();
 
   @override
   Widget build(BuildContext context) {
@@ -77,18 +84,29 @@ class SideMenuCard extends StatelessWidget {
       _buildSideMenuItem(
         title: 'Home',
         icon: CupertinoIcons.home,
-        onTapMessage: 'HomeScreenCalled',
+        onTap: (index, _) {
+          sideMenu.changePage(index);
+          scaffoldKey.currentState?.closeDrawer();
+          controller.fetchUserAnalyticsData();
+        },
       ),
       _buildSideMenuItem(
         title: 'Tasks',
         icon: CupertinoIcons.create_solid,
         tooltipContent: 'Add Task',
-        onTapMessage: 'AddTaskScreenCalled',
+        onTap: (index, _) {
+          sideMenu.changePage(index);
+          scaffoldKey.currentState?.closeDrawer();
+        },
       ),
       _buildSideMenuItem(
         title: 'Engines',
         icon: FontAwesomeIcons.searchengin,
-        onTapMessage: 'EnginesScreenCalled',
+        onTap: (index, _) {
+          sideMenu.changePage(index);
+          scaffoldKey.currentState?.closeDrawer();
+          // _enginesController.getAllEngines(page: 1);
+        },
       ),
       SideMenuItem(
         builder: (context, displayMode) {
@@ -97,7 +115,10 @@ class SideMenuCard extends StatelessWidget {
       ),
       _buildSideMenuItem(
         title: 'Profile',
-        onTapMessage: 'ProfileScreenCalled',
+        onTap: (index, _) {
+          sideMenu.changePage(index);
+          scaffoldKey.currentState?.closeDrawer();
+        },
       ),
     ];
   }
@@ -106,19 +127,14 @@ class SideMenuCard extends StatelessWidget {
     required String title,
     IconData? icon,
     String? tooltipContent,
+    void Function(int, SideMenuController)? onTap,
     Widget? trailing,
-    required String onTapMessage,
   }) {
     return SideMenuItem(
-      title: title,
-      trailing: trailing,
-      icon: icon != null ? Icon(icon) : null,
-      tooltipContent: tooltipContent,
-      onTap: (index, _) {
-        sideMenu.changePage(index);
-        debugPrint(onTapMessage);
-        scaffoldKey.currentState?.closeDrawer();
-      },
-    );
+        title: title,
+        trailing: trailing,
+        icon: icon != null ? Icon(icon) : null,
+        tooltipContent: tooltipContent,
+        onTap: onTap);
   }
 }

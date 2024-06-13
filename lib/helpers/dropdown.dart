@@ -22,6 +22,8 @@ class CustomDropdown extends StatelessWidget {
     return ReUsableContainer(
       child: DropdownButtonFormField(
         padding: EdgeInsets.zero,
+        iconSize: 12.0,
+        alignment: Alignment.centerLeft,
         isExpanded: false,
         hint: CustomTextWidget(
           text: hintText,
@@ -36,7 +38,7 @@ class CustomDropdown extends StatelessWidget {
         icon: const Icon(Icons.keyboard_arrow_down_rounded),
         style: TextStyle(
           fontFamily: 'Poppins',
-          fontSize: 12,
+          fontSize: 10,
           fontWeight: FontWeight.w300,
           color: AppColors.lightTextColor,
         ),

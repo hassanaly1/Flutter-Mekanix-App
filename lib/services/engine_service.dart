@@ -196,7 +196,8 @@ class EngineService {
         ToastMessage.showToastMessage(
             message: 'Something went wrong, please try again',
             backgroundColor: Colors.red);
-        debugPrint('Error updating engine image:${response.reasonPhrase}');
+        debugPrint(
+            'Error updating engine image:${response.statusCode} ${response.reasonPhrase}');
       }
     } catch (e) {
       ToastMessage.showToastMessage(
@@ -211,7 +212,7 @@ class EngineService {
       {required String engineName}) async {
     debugPrint('GetEngineDataApiCalled');
     final url =
-        '${ApiEndPoints.baseUrl}${ApiEndPoints.updateEngineImageUrl}?name=$engineName';
+        '${ApiEndPoints.baseUrl}${ApiEndPoints.getEngineBrandById}?name=$engineName';
 
     bool success;
 

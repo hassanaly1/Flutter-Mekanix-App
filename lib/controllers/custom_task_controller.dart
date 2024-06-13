@@ -18,13 +18,6 @@ class CustomTaskController extends GetxController {
   RxString engineBrandId = ''.obs;
   RxString engineBrandName = ''.obs;
 
-  @override
-  void onInit() {
-    getAllCustomTasks(page: 1);
-    getAllCustomTasks(page: 1, isTemplate: true);
-    super.onInit();
-  }
-
   Future<void> getAllCustomTasks(
       {String? searchName, int? page, bool isTemplate = false}) async {
     debugPrint(
@@ -37,17 +30,14 @@ class CustomTaskController extends GetxController {
         page: page ?? currentPage.value,
         isTemplate: isTemplate,
       );
+
       debugPrint(
           '${isTemplate ? 'Templates' : 'Submitted Tasks'}: ${fetchedTasks.length}');
-      if (fetchedTasks.isNotEmpty) {
-        if (isTemplate) {
-          templates.value = fetchedTasks;
-        } else {
-          submittedTasks.value = fetchedTasks;
-        }
+
+      if (isTemplate) {
+        templates.assignAll(fetchedTasks);
       } else {
-        submittedTasks.value = [];
-        templates.value = [];
+        submittedTasks.assignAll(fetchedTasks);
       }
     } catch (e) {
       debugPrint('Error fetching Tasks: $e');
@@ -65,7 +55,8 @@ class CustomTaskController extends GetxController {
       );
 
       if (taskDeleted) {
-        getAllCustomTasks();
+        getAllCustomTasks(page: 1);
+        getAllCustomTasks(page: 1, isTemplate: true);
         ToastMessage.showToastMessage(
             message: 'Task Deleted Successfully',
             backgroundColor: Colors.green);

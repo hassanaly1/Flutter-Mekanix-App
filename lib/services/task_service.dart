@@ -63,7 +63,13 @@ class TaskService {
       Uri.parse('${ApiEndPoints.baseUrl}${ApiEndPoints.addCustomTaskFilesUrl}'),
     );
 
-    addFilesToRequest(request, attachments);
+    for (int i = 0; i < attachments.length; i++) {
+      request.files.add(http.MultipartFile.fromBytes(
+        'files',
+        attachments[i],
+        filename: 'file_$i.png',
+      ));
+    }
 
     request.headers.addAll(headers);
     try {
@@ -85,22 +91,12 @@ class TaskService {
     }
   }
 
-  Future<void> addFilesToRequest(
-      http.MultipartRequest request, List<Uint8List> attachments) async {
-    for (int i = 0; i < attachments.length; i++) {
-      request.files.add(http.MultipartFile.fromBytes(
-        'files',
-        attachments[i],
-        filename: 'file_$i.png',
-      ));
-    }
-  }
-
   Future<List<MyCustomTask>> getAllCustomTasks(
       {String? searchString,
       required String token,
       required int page,
       required bool isTemplate}) async {
+    debugPrint('GettingAllCustomTasks');
     String apiUrl =
         '${ApiEndPoints.baseUrl}${ApiEndPoints.getAllCustomTaskUrl}?page=$page';
     try {
@@ -160,13 +156,40 @@ class TaskService {
         headers: headers,
       );
 
+      debugPrint('Response Status Code: ${response.statusCode}');
+      debugPrint('Response Body: ${response.body}');
+
       if (response.statusCode == 201) {
-        final Map<String, dynamic> responseData = json.decode(response.body);
-        final String message = responseData['message'];
-        final Map<String, dynamic> data = responseData['data'];
-        debugPrint('Task deletion message: $message');
-        debugPrint('Deleted Task details: $data');
-        isSuccess = true;
+        var responseData = json.decode(response.body);
+
+        if (responseData is Map) {
+          debugPrint('Response is a Map: $responseData');
+
+          final String message = responseData['message'];
+          dynamic data = responseData['data'];
+
+          // Check if data is a List and handle accordingly
+          if (data is List) {
+            if (data.isEmpty) {
+              debugPrint('Data is an empty list');
+              data = {}; // Set data to an empty map if it's an empty list
+            } else {
+              debugPrint('Data is a list: $data');
+              // Handle non-empty list case if needed
+            }
+          } else if (data is Map) {
+            debugPrint('Data is a map: $data');
+          } else {
+            debugPrint('Unexpected data type: ${data.runtimeType}');
+            data = {}; // Fallback to an empty map
+          }
+
+          debugPrint('Task deletion message: $message');
+          debugPrint('Deleted Task details: $data');
+          isSuccess = true;
+        } else {
+          throw Exception('Unexpected response format: $responseData');
+        }
       } else {
         debugPrint(
             'Failed to delete task. Status Code: ${response.statusCode} ${response.reasonPhrase}');

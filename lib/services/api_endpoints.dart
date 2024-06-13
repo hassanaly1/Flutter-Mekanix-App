@@ -29,5 +29,5 @@ class ApiEndPoints {
   static String getEngineBrandById = '/api/engine/getenginebrandbyid';
   static String updateEngineUrl = '/api/engine/updateenginebrand';
   static String deleteEngineUrl = '/api/engine/deleteenginebrand';
-  static String updateEngineImageUrl = '/api/engine/getenginebrandbyid';
+  static String updateEngineImageUrl = '/api/engine/updateengineprofile';
 }

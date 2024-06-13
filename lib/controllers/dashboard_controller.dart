@@ -6,48 +6,29 @@ class DashboardController extends GetxController {
   final PageController pageController = PageController();
   late TabController tabController;
 
-//------------------------------------------
-  var isLoading = true.obs;
-  var templateCount = 0.obs;
-  var formCount = 0.obs;
-  var engineCount = 0.obs;
-  var data = {
-    'template_analytics': [
-      {'count': 10},
-      {'count': 15},
-      {'count': 8},
-      {'count': 12},
-      {'count': 7},
-      {'count': 18},
-      {'count': 20},
-    ]
-  }.obs;
+  // var isLoading = false.obs;
+  // var isFormsAreLoading = false.obs;
+  // var isEnginesAreLoading = false.obs;
+  // var isTemplatesAreLoading = false.obs;
+  // var templateCount = 0.obs;
+  // var formCount = 0.obs;
+  // var engineCount = 0.obs;
+  // var templateAnalytics = <Analytic>[].obs;
+  // var formAnalytics = <Analytic>[].obs;
+  // var engineAnalytics = <Analytic>[].obs;
 
   final SideMenuController sideMenu = Get.put(SideMenuController());
   RxInt currentPage = 0.obs;
 
   @override
   void onInit() {
+    // fetchUserAnalyticsData();
     sideMenu.addListener((index) {
       tabController.animateTo(index,
           duration: const Duration(seconds: 1), curve: Curves.easeInOutCubic);
       currentPage.value = sideMenu.currentPage;
       debugPrint('CurrentPage: ${currentPage.value}');
-      // fetchUserAnalyticsData();
     });
     super.onInit();
   }
-
-// void fetchUserAnalyticsData() async {
-//   try {
-//     isLoading(true);
-//     var result = await DashboardService().fetchData();
-//     data.value = result;
-//     templateCount.value = result['templates_count'];
-//     formCount.value = result['forms_count'];
-//     engineCount.value = result['engines_count'];
-//   } finally {
-//     isLoading(false);
-//   }
-// }
 }

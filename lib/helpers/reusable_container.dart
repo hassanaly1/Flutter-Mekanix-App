@@ -58,7 +58,7 @@ class ReUsableContainer extends StatelessWidget {
       height: height,
       width: width,
       padding:
-          padding ?? const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+          padding ?? const EdgeInsets.symmetric(horizontal: 2.0, vertical: 4.0),
       decoration: BoxDecoration(
         color: color ?? Colors.grey.shade100,
         borderRadius: BorderRadius.circular(borderRadius ?? 12.0),

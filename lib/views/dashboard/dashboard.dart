@@ -4,6 +4,8 @@ import 'package:flutter_mekanix_app/controllers/dashboard_controller.dart';
 import 'package:flutter_mekanix_app/controllers/universal_controller.dart';
 import 'package:flutter_mekanix_app/helpers/custom_text.dart';
 import 'package:flutter_mekanix_app/helpers/profile_avatar.dart';
+import 'package:flutter_mekanix_app/helpers/storage_helper.dart';
+import 'package:flutter_mekanix_app/views/auth/login.dart';
 import 'package:flutter_mekanix_app/views/dashboard/right_side.dart';
 import 'package:flutter_mekanix_app/views/dashboard/side_menu.dart';
 import 'package:get/get.dart';
@@ -35,7 +37,6 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('DashboardScreenBuildCalled');
     return SafeArea(
       child: DefaultTabController(
         length: 9,
@@ -49,6 +50,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               drawer: !context.isLandscape
                   ? Drawer(
                       child: SideMenuCard(
+                      controller: universalController,
                       sideMenu: controller.sideMenu,
                       scaffoldKey: _scaffoldKey,
                     ))
@@ -67,6 +69,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                         children: [
                           if (context.isLandscape)
                             SideMenuCard(
+                                controller: universalController,
                                 sideMenu: controller.sideMenu,
                                 scaffoldKey: _scaffoldKey),
                           RightSideWidget(
@@ -163,7 +166,14 @@ class HomeAppbar extends StatelessWidget {
                     ),
                     child: context.isLandscape
                         ? IconButton(
-                            onPressed: () {},
+                            onPressed: () {
+                              storage.remove('token');
+                              storage.remove('user_info');
+                              Get.delete<UniversalController>();
+                              Get.delete<DashboardController>();
+                              // Get.delete<EnginesController>();
+                              Get.offAll(() => LoginScreen());
+                            },
                             icon: const Icon(Icons.logout_rounded),
                           )
                         : InkWell(

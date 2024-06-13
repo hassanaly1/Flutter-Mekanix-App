@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:easy_sidemenu/easy_sidemenu.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_mekanix_app/controllers/custom_task_controller.dart';
 import 'package:flutter_mekanix_app/helpers/appcolors.dart';
 import 'package:flutter_mekanix_app/helpers/custom_button.dart';
 import 'package:flutter_mekanix_app/helpers/custom_text.dart';
@@ -19,6 +19,15 @@ import 'package:flutter_mekanix_app/views/task/widgets/radio_button.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+
+class MyAttachmentModel {
+  final String name, path;
+
+  MyAttachmentModel({
+    required this.name,
+    required this.path,
+  });
+}
 
 class CustomTaskScreen extends StatefulWidget {
   final bool isTemplate;
@@ -46,7 +55,7 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
   final _customerEmailController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
-  RxBool isLoading = false.obs;
+  final isLoading = false.obs, attachs = <MyAttachmentModel>[].obs;
 
   @override
   void initState() {
@@ -61,15 +70,6 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
         ));
     super.initState();
   }
-
-  // void _updateTask() {
-  //   _isTemplate.value = !_isTemplate.value;
-  //   _task.value.isTemplate = _isTemplate.value;
-  //   // _task.update((task) {
-  //   //   task?.isForm = widget.controller.isForm.value;
-  //   //   task?.isTemplate = widget.controller.isTemplate.value;
-  //   // });
-  // }
 
   @override
   Widget build(BuildContext context) {
@@ -226,7 +226,6 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                     text: 'Save as template for future use',
                     fontSize: 12.0,
                   ),
-                  subtitle: Text(widget.task == null ? 'NULL' : 'NO NULL'),
                   value: _isTemplate.value,
                   onChanged: (value) {
                     _isTemplate.value = !_isTemplate.value;
@@ -243,38 +242,59 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                       showCustomPopup(
                         context: context,
                         width: context.width * 0.6,
-                        widget: Form(
-                          child: Column(
-                            children: [
-                              const CustomTextWidget(
-                                text:
-                                    'Enter the name of the Customer you want to send this task as report via email.',
-                                fontSize: 10.0,
-                                maxLines: 5,
-                                textAlign: TextAlign.center,
-                              ),
-                              HeadingAndTextfield(
-                                title: 'Enter Customer Name',
-                                controller: _customerNameController,
-                                hintText: 'Customer Name',
-                              ),
-                              HeadingAndTextfield(
-                                title: 'Enter Customer Email',
-                                controller: _customerEmailController,
-                                hintText: 'Customer Email',
-                              ),
-                              Obx(
-                                () => CustomButton(
-                                  buttonText: 'Send Report',
-                                  onTap: () {
+                        widget: Column(
+                          children: [
+                            const CustomTextWidget(
+                              text:
+                                  'Enter the name of the Customer you want to send this task as report via email.',
+                              fontSize: 10.0,
+                              maxLines: 5,
+                              textAlign: TextAlign.center,
+                            ),
+                            HeadingAndTextfield(
+                              title: 'Enter Customer Name',
+                              controller: _customerNameController,
+                              hintText: 'Customer Name',
+                              validator: (p0) {
+                                AppValidator.validateEmptyText(
+                                  fieldName: 'Customer Name',
+                                  value: p0,
+                                );
+                                return null;
+                              },
+                            ),
+                            HeadingAndTextfield(
+                              title: 'Enter Customer Email',
+                              controller: _customerEmailController,
+                              hintText: 'Customer Email',
+                              validator: (p0) {
+                                AppValidator.validateEmptyText(
+                                  fieldName: 'Customer Email',
+                                  value: p0,
+                                );
+                                return null;
+                              },
+                            ),
+                            Obx(
+                              () => CustomButton(
+                                buttonText: 'Send Report',
+                                onTap: () {
+                                  if (_customerNameController.text.isNotEmpty &&
+                                      _customerEmailController
+                                          .text.isNotEmpty) {
                                     debugPrint('SubmittingTask');
                                     onSubmitTask(_task.value, _attachments);
-                                  },
-                                  isLoading: isLoading.value,
-                                ),
-                              )
-                            ],
-                          ),
+                                  } else {
+                                    ToastMessage.showToastMessage(
+                                        message:
+                                            'Please Enter Customer Name and Email',
+                                        backgroundColor: Colors.red);
+                                  }
+                                },
+                                isLoading: isLoading.value,
+                              ),
+                            )
+                          ],
                         ),
                       );
                     } else {
@@ -339,10 +359,16 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                 },
               );
             case MyCustomItemType.checkbox:
+              print(element.value.runtimeType);
               return CustomCheckboxWidget(
                 options: element.options ?? [],
                 heading: element.label ?? '',
-                selected: element.value?.cast<String>() ?? [],
+                selected: (element.value != null &&
+                        element.value is String &&
+                        element.value.isNotEmpty)
+                    ? element.value.cast<String>()
+                    : [],
+                // selected: element.value?.cast<String>() ?? [],
                 onChange: (List<String> values) => element.value = values,
                 showDeleteIcon: true,
                 onDelete: () {
@@ -352,18 +378,22 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                 },
               );
             case MyCustomItemType.attachment:
-              RxString fileName = ''.obs;
-              RxString imagePath = ''.obs;
+              MyAttachmentModel? attach;
+              if (element.value is int) {
+                attach = attachs[element.value];
+              }
               return Obx(
                 () => HeadingAndTextfield(
                   title: element.label ?? '',
-                  hintText: fileName.value == ''
-                      ? 'No file selected'
-                      : fileName.value,
-                  readOnly: true,
+                  hintText: widget.task == null
+                      ? attach == null
+                          ? 'No file selected'
+                          : attach.name
+                      : element.value.toString(),
+                  readOnly: attachs.isEmpty ? true : true,
                   onTap: () async {
                     int? oldIndex;
-                    if (fileName.value != '') {
+                    if (attach != null) {
                       final List<MyCustomElementModel> elements =
                           _task.value.formSections[sectionIndex].elements;
                       oldIndex = elements.indexOf(element);
@@ -372,8 +402,6 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                       source: ImageSource.gallery,
                     );
                     if (image != null) {
-                      fileName.value = image.name;
-                      imagePath.value = image.path;
                       String fileExtension =
                           image.name.split('.').last.toLowerCase();
                       if (fileExtension == 'png' ||
@@ -386,6 +414,11 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                           int i = _attachments.length;
                           _attachments.insert(i, imageBytes);
                           element.value = i;
+                          attachs.add(MyAttachmentModel(
+                            name: image.name,
+                            path: image.path,
+                          ));
+                          _task.refresh();
                         }
                       } else {
                         Get.snackbar(
@@ -397,19 +430,54 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                   onDelete: () {
                     _task.value.formSections[sectionIndex].elements
                         .remove(element);
-                    fileName.value = '';
-                    imagePath.value = '';
                     _task.refresh();
                   },
-                  showEyeIcon: fileName.value != '',
+                  showEyeIcon: widget.task == null
+                      ? attach != null
+                      : element.value != '',
                   onEyeTap: () {
-                    if (imagePath.value.isNotEmpty) {
+                    if (widget.task == null
+                        ? attach != null
+                        : element.value != '') {
                       Get.dialog(
                         Dialog(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Image.file(File(imagePath.value)),
+                              const SizedBox(height: 4.0),
+                              const Text(
+                                'Attachment',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 4.0),
+                              AspectRatio(
+                                  aspectRatio: 1,
+                                  child: widget.task != null
+                                      ? Image.network(
+                                          element.value,
+                                          loadingBuilder: (context, child,
+                                              loadingProgress) {
+                                            if (loadingProgress == null) {
+                                              return child;
+                                            }
+                                            return Center(
+                                              child: CircularProgressIndicator(
+                                                value: loadingProgress
+                                                            .expectedTotalBytes !=
+                                                        null
+                                                    ? loadingProgress
+                                                            .cumulativeBytesLoaded /
+                                                        loadingProgress
+                                                            .expectedTotalBytes!
+                                                    : null,
+                                              ),
+                                            );
+                                          },
+                                        )
+                                      : Image.file(File(attach!.path))),
                               TextButton(
                                 onPressed: () => Get.back(),
                                 child: const Text('Close'),
@@ -452,14 +520,20 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
               usePrimaryColor: true,
               buttonText: 'Add Section',
               onTap: () {
-                MyFormSection newSection = MyFormSection(
-                  heading: _hintTextController.text,
-                  elements: [],
-                );
-                _task.value.formSections.add(newSection);
-                _hintTextController.clear();
-                _task.refresh();
-                Get.back();
+                if (_hintTextController.text.isNotEmpty) {
+                  MyFormSection newSection = MyFormSection(
+                    heading: _hintTextController.text,
+                    elements: [],
+                  );
+                  _task.value.formSections.add(newSection);
+                  _hintTextController.clear();
+                  _task.refresh();
+                  Get.back();
+                } else {
+                  ToastMessage.showToastMessage(
+                      message: 'Please Add Section Heading',
+                      backgroundColor: Colors.red);
+                }
               },
               isLoading: false,
             ),
@@ -580,7 +654,7 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
               ),
               CustomButton(
                 usePrimaryColor: true,
-                buttonText: 'Add Attachment',
+                buttonText: 'Add Attachments',
                 onTap: () {
                   if (_formKey.currentState!.validate()) {
                     MyCustomElementModel myCustomItemModel =
@@ -591,7 +665,6 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                     );
                     _task.value.formSections[sectionIndex].elements
                         .add(myCustomItemModel);
-                    _task.refresh();
                     Get.back();
                     _hintTextController.clear();
                   }
@@ -673,7 +746,9 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
             usePrimaryColor: true,
             buttonText: isCheckbox ? 'Add Checkbox' : 'Add Radio Button',
             onTap: () {
-              if (_formKey.currentState!.validate() && options.isNotEmpty) {
+              if (_formKey.currentState!.validate() &&
+                  options.isNotEmpty &&
+                  options.length > 1) {
                 MyCustomElementModel myCustomItemModel = MyCustomElementModel(
                   label: _hintTextController.text,
                   type: isCheckbox
@@ -687,6 +762,10 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                 _task.refresh();
                 Get.back();
                 _hintTextController.clear();
+              } else {
+                ToastMessage.showToastMessage(
+                    message: 'Please add atleast 2 options',
+                    backgroundColor: Colors.red);
               }
             },
             isLoading: false,
@@ -704,7 +783,6 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
           await TaskService().addCustomTaskFiles(attachments: attachments);
       if (response.isSuccess) {
         urls.assignAll(response.data);
-        print(urls);
         for (MyFormSection section in e.formSections) {
           for (MyCustomElementModel element in section.elements) {
             if (element.type == MyCustomItemType.attachment &&
@@ -719,7 +797,9 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
           ToastMessage.showToastMessage(
               message: 'Task Created Successfully',
               backgroundColor: Colors.green);
-
+          final CustomTaskController controller = Get.find();
+          controller.getAllCustomTasks(page: 1);
+          controller.getAllCustomTasks(page: 1, isTemplate: true);
           Get.back();
           Get.back();
         }
@@ -763,6 +843,8 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
           ToastMessage.showToastMessage(
               message: 'Task Updated Successfully',
               backgroundColor: Colors.green);
+          final CustomTaskController controller = Get.find();
+          controller.getAllCustomTasks();
           Get.back();
         }
       } else {

@@ -45,8 +45,7 @@ class _DoctorBoardingScreenState extends State<OnBoardingScreen> {
               children: const [
                 ReUsableBoardingScreen(
                   text: 'Welcome to Mechanix',
-                  subText:
-                      'Your Trusted Companion for Car Maintenance and Repair.',
+                  subText: 'Trusted Companion for Maintenance and Repair.',
                 ),
                 ReUsableBoardingScreen(
                   text: 'Effortless Task Management',

@@ -1,4 +1,5 @@
 import 'package:easy_sidemenu/easy_sidemenu.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mekanix_app/controllers/custom_task_controller.dart';
 import 'package:flutter_mekanix_app/controllers/universal_controller.dart';
@@ -9,7 +10,6 @@ import 'package:flutter_mekanix_app/helpers/dropdown.dart';
 import 'package:flutter_mekanix_app/helpers/reusable_container.dart';
 import 'package:flutter_mekanix_app/helpers/tabbar.dart';
 import 'package:flutter_mekanix_app/helpers/toast.dart';
-import 'package:flutter_mekanix_app/models/custom_task_model.dart';
 import 'package:flutter_mekanix_app/services/engine_service.dart';
 import 'package:flutter_mekanix_app/views/task/custom_task.dart';
 import 'package:flutter_mekanix_app/views/task/scan_qrcode.dart';
@@ -19,9 +19,9 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
 
 class TaskScreen extends StatefulWidget {
-  final SideMenuController sideMenu;
+  final SideMenuController? sideMenu;
 
-  TaskScreen({super.key, required this.sideMenu});
+  TaskScreen({super.key, this.sideMenu});
 
   final UniversalController universalController = Get.find();
 
@@ -36,17 +36,24 @@ class _TaskScreenState extends State<TaskScreen> {
 
   @override
   void initState() {
+    debugPrint('TaskScreenInitCalled');
     controller = Get.put(CustomTaskController());
+    controller.getAllCustomTasks(page: 1);
+    controller.getAllCustomTasks(page: 1, isTemplate: true);
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
+    // controller.getAllCustomTasks(page: 1);
+    // controller.getAllCustomTasks(page: 1, isTemplate: true);
     return SafeArea(
       child: PopScope(
         canPop: false,
         onPopInvoked: (didPop) {
-          widget.sideMenu.changePage(0);
+          widget.sideMenu?.changePage(0);
+          UniversalController universalController = Get.find();
+          universalController.fetchUserAnalyticsData();
         },
         child: DefaultTabController(
           length: 2,
@@ -76,7 +83,6 @@ class _TaskScreenState extends State<TaskScreen> {
                         children: [
                           Obx(
                             () => TopSection(
-                              sideMenuController: widget.sideMenu,
                               controller: controller,
                               reportNameController: reportNameController,
                               universalController: widget.universalController,
@@ -105,12 +111,12 @@ class _TaskScreenState extends State<TaskScreen> {
                     //     }
                     //   },
                     // ),
-                    const CustomTabBar(
-                      // onTap: (val) {
-                      //   currentPage.value = val;
-                      // },
-                      title1: 'Submitted Tasks',
-                      title2: 'Templates',
+                    const Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: CustomTabBar(
+                        title1: 'Submitted Tasks',
+                        title2: 'Templates',
+                      ),
                     ),
                     Expanded(
                       child: TabBarView(
@@ -118,12 +124,10 @@ class _TaskScreenState extends State<TaskScreen> {
                           TaskListView(
                             isTemplate: false,
                             controller: controller,
-                            tasks: controller.submittedTasks,
                           ),
                           TaskListView(
                             isTemplate: true,
                             controller: controller,
-                            tasks: controller.templates,
                           ),
                         ],
                       ),
@@ -141,14 +145,12 @@ class _TaskScreenState extends State<TaskScreen> {
 
 class TopSection extends StatelessWidget {
   final CustomTaskController controller;
-  final SideMenuController sideMenuController;
   final TextEditingController reportNameController;
   final UniversalController universalController;
   final int currentPage;
 
   const TopSection({
     super.key,
-    required this.sideMenuController,
     required this.controller,
     required this.reportNameController,
     required this.universalController,
@@ -209,12 +211,10 @@ class TopSection extends StatelessWidget {
 
 class TaskListView extends StatelessWidget {
   final bool isTemplate;
-  final List<MyCustomTask> tasks;
   final CustomTaskController controller;
 
   const TaskListView({
     super.key,
-    required this.tasks,
     required this.isTemplate,
     required this.controller,
   });
@@ -227,31 +227,35 @@ class TaskListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Obx(() {
-      if (controller.isTasksAreLoading.value) {
-        return const Center(
-          child: SpinKitRing(
-            lineWidth: 2.0,
-            color: Colors.black87,
-            size: 30.0,
-          ),
-        );
-      } else if (tasks.isEmpty) {
-        return Center(
-          heightFactor: 10.0,
-          child: CustomTextWidget(
-            text: isTemplate
-                ? 'No Templates Available'
-                : 'No Submitted Tasks Available',
-          ),
-        );
-      } else {
-        return RefreshIndicator(
-          onRefresh: _refreshTasks,
-          color: AppColors.primaryColor,
-          backgroundColor: AppColors.secondaryColor,
-          triggerMode: RefreshIndicatorTriggerMode.onEdge,
-          child: ListView.builder(
+    return RefreshIndicator(
+      onRefresh: _refreshTasks,
+      color: AppColors.primaryColor,
+      backgroundColor: AppColors.secondaryColor,
+      triggerMode: RefreshIndicatorTriggerMode.onEdge,
+      child: Obx(() {
+        if (controller.isTasksAreLoading.value) {
+          return Center(
+            child: SpinKitRing(
+              lineWidth: 2.0,
+              color: AppColors.blueTextColor,
+              size: 30,
+            ),
+          );
+        } else if (isTemplate
+            ? controller.templates.isEmpty
+            : controller.submittedTasks.isEmpty) {
+          return Center(
+            heightFactor: 10.0,
+            child: CustomTextWidget(
+              text: isTemplate
+                  ? 'No Templates Available'
+                  : 'No Submitted Tasks Available',
+            ),
+          );
+        } else {
+          final tasks =
+              isTemplate ? controller.templates : controller.submittedTasks;
+          return ListView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: tasks.length,
@@ -297,10 +301,10 @@ class TaskListView extends StatelessWidget {
                 ),
               );
             },
-          ),
-        );
-      }
-    });
+          );
+        }
+      }),
+    );
   }
 }
 
@@ -314,7 +318,7 @@ class CustomPopup {
   }) {
     showCustomPopup(
       context: context,
-      width: context.isLandscape ? context.width * 0.3 : context.width * 0.5,
+      width: context.isLandscape ? context.width * 0.3 : context.width * 0.6,
       widget: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -340,8 +344,32 @@ class CustomPopup {
               ),
               IconButton(
                 onPressed: () {
-                  Get.to(() => const ScanQrCodeScreen(),
-                      transition: Transition.rightToLeft);
+                  if (kIsWeb) {
+                    // Show popup for web
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Use Mobile App'),
+                        content: const Text(
+                            'Please use the mobile app to use the QR code scanner.'),
+                        actions: <Widget>[
+                          TextButton(
+                            child: const Text('OK'),
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  } else {
+                    // Navigate to QR code scanner screen for mobile
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const ScanQrCodeScreen(),
+                      ),
+                    );
+                  }
                 },
                 icon: const Icon(Icons.qr_code),
               ),
@@ -368,6 +396,9 @@ class CustomPopup {
                         .getEngineData(engineName: value?.name ?? '');
 
                     if (result['success']) {
+                      ToastMessage.showToastMessage(
+                          message: 'Engine Selected',
+                          backgroundColor: Colors.green);
                       final engineData = result['data'];
                       final engineId = engineData['_id'];
                       final engineName = engineData['name'];
@@ -410,6 +441,7 @@ class CustomPopup {
                       isTemplate: currentPage == 0 ? false : true,
                     ),
                   );
+                  // reportNameController.clear();
                 } else {
                   ToastMessage.showToastMessage(
                       message: 'Please Select Engine from the Dropdown.',
