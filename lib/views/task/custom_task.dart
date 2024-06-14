@@ -55,7 +55,7 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
   final _customerEmailController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
-  final isLoading = false.obs, attachs = <MyAttachmentModel>[].obs;
+  final isLoading = false.obs, listOfAttachments = <MyAttachmentModel>[].obs;
 
   @override
   void initState() {
@@ -359,16 +359,24 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                 },
               );
             case MyCustomItemType.checkbox:
-              print(element.value.runtimeType);
+              List<String> selectedValues;
+              if (element.value is List<dynamic>) {
+                selectedValues = (element.value as List<dynamic>)
+                    .map((e) => e.toString())
+                    .toList();
+              } else {
+                selectedValues = [];
+              }
               return CustomCheckboxWidget(
                 options: element.options ?? [],
                 heading: element.label ?? '',
-                selected: (element.value != null &&
-                        element.value is String &&
-                        element.value.isNotEmpty)
-                    ? element.value.cast<String>()
-                    : [],
+                selected: selectedValues,
+                // selected: element.value.cast<String>() ?? [],
                 // selected: element.value?.cast<String>() ?? [],
+                // (element.value != null &&
+                //     element.value is String &&
+                //     element.value.isNotEmpty)
+                //     ?
                 onChange: (List<String> values) => element.value = values,
                 showDeleteIcon: true,
                 onDelete: () {
@@ -380,7 +388,7 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
             case MyCustomItemType.attachment:
               MyAttachmentModel? attach;
               if (element.value is int) {
-                attach = attachs[element.value];
+                attach = listOfAttachments[element.value];
               }
               return Obx(
                 () => HeadingAndTextfield(
@@ -390,7 +398,8 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                           ? 'No file selected'
                           : attach.name
                       : element.value.toString(),
-                  readOnly: attachs.isEmpty ? true : true,
+                  // : listOfAttachments[element.value].name,
+                  readOnly: listOfAttachments.isEmpty ? true : true,
                   onTap: () async {
                     int? oldIndex;
                     if (attach != null) {
@@ -414,10 +423,12 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                           int i = _attachments.length;
                           _attachments.insert(i, imageBytes);
                           element.value = i;
-                          attachs.add(MyAttachmentModel(
-                            name: image.name,
-                            path: image.path,
-                          ));
+                          listOfAttachments.add(
+                            MyAttachmentModel(
+                              name: image.name,
+                              path: image.path,
+                            ),
+                          );
                           _task.refresh();
                         }
                       } else {
@@ -560,6 +571,7 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
             _buildAddCheckboxAndRadioButton(context,
                 sectionIndex: sectionIndex, isCheckbox: true),
             _buildAddAttachmentButton(context, sectionIndex: sectionIndex),
+            _buildAddGridButton(context, sectionIndex: sectionIndex),
           ],
         ),
       ),
@@ -606,6 +618,49 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                     Get.back();
                     _hintTextController.clear();
                   }
+                },
+                isLoading: false,
+              ),
+            ],
+          ),
+        );
+      },
+      isLoading: false,
+    );
+  }
+
+  Widget _buildAddGridButton(BuildContext context,
+      {required int sectionIndex}) {
+    TextEditingController rowsController = TextEditingController();
+
+    return CustomButton(
+      usePrimaryColor: true,
+      buttonText: 'Add Grid',
+      onTap: () {
+        showCustomPopup(
+          context: context,
+          width: context.width * 0.3,
+          widget: Column(
+            children: [
+              Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    ReUsableTextField(
+                      hintText: 'Enter Number of Rows',
+                      controller: rowsController,
+                      keyboardType: TextInputType.number,
+                      validator: (value) => AppValidator.validateEmptyText(
+                          fieldName: 'Rows', value: value),
+                    ),
+                  ],
+                ),
+              ),
+              CustomButton(
+                usePrimaryColor: true,
+                buttonText: 'Add Grid',
+                onTap: () {
+                  if (_formKey.currentState!.validate()) {}
                 },
                 isLoading: false,
               ),
@@ -777,7 +832,7 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
 
   onSubmitTask(MyCustomTask e, List<Uint8List> attachments) async {
     try {
-      isLoading(true); // Set loading state to true
+      isLoading(true);
       final urls = <String>[];
       TaskResponse response =
           await TaskService().addCustomTaskFiles(attachments: attachments);
@@ -860,7 +915,7 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
           message: 'Something went wrong, please try again',
           backgroundColor: Colors.red);
     } finally {
-      isLoading(false); // Set loading state to false
+      isLoading(false);
     }
   }
 }
