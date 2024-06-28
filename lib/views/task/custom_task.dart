@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -16,7 +17,6 @@ import 'package:flutter_mekanix_app/views/task/widgets/checkbox.dart';
 import 'package:flutter_mekanix_app/views/task/widgets/heading.dart';
 import 'package:flutter_mekanix_app/views/task/widgets/heading_and_textfield.dart';
 import 'package:flutter_mekanix_app/views/task/widgets/radio_button.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -47,13 +47,16 @@ class CustomTaskScreen extends StatefulWidget {
 
 class _CustomTaskScreenState extends State<CustomTaskScreen> {
   late Rx<MyCustomTask> _task;
-  final _isForm = true.obs, _isTemplate = false.obs;
+  final _isForm = true.obs;
+  final _isTemplate = false.obs;
   final _attachments = <Uint8List>[];
   final _hintTextController = TextEditingController();
   final _radioController = TextEditingController();
   final _customerNameController = TextEditingController();
   final _customerEmailController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  final PageController _pageController = PageController();
+  final _currentPage = 0.obs;
 
   final isLoading = false.obs, listOfAttachments = <MyAttachmentModel>[].obs;
 
@@ -64,9 +67,9 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
           name: widget.reportName,
           customerName: _customerNameController.text.trim(),
           customerEmail: _customerEmailController.text.trim(),
-          formSections: <MyFormSection>[],
+          pages: <MyPage>[MyPage(sections: [])],
           isForm: _isForm.value,
-          isTemplate: _isTemplate.value,
+          isTemplate: widget.isTemplate,
         ));
     super.initState();
   }
@@ -80,16 +83,6 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
           Image.asset('assets/images/home-bg.png', fit: BoxFit.fill),
           Scaffold(
             backgroundColor: Colors.transparent,
-            floatingActionButton: Padding(
-              padding: const EdgeInsets.only(bottom: 40.0),
-              child: FloatingActionButton(
-                onPressed: () {},
-                backgroundColor: AppColors.primaryColor,
-                mini: true,
-                shape: const CircleBorder(),
-                child: const Icon(Icons.arrow_upward_rounded),
-              ),
-            ),
             body: NestedScrollView(
               headerSliverBuilder: (context, innerBoxIsScrolled) => [
                 SliverAppBar(
@@ -101,9 +94,9 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                   flexibleSpace: Center(
                     child: CustomTextWidget(
                       text: widget.reportName,
-                      fontSize: 22.0,
+                      fontSize: 18.0,
                       fontWeight: FontWeight.w600,
-                      textColor: Colors.white70,
+                      textColor: Colors.white,
                     ),
                   ),
                 ),
@@ -122,7 +115,7 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                   () => Column(
                     children: [
                       _buildHeader(context),
-                      _task.value.formSections.isEmpty
+                      _task.value.pages.isEmpty
                           ? const Align(
                               alignment: Alignment.center,
                               child: CustomTextWidget(
@@ -130,10 +123,29 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                                 textAlign: TextAlign.center,
                                 fontSize: 12.0,
                                 text:
-                                    'No Items Added, Tap on + icon to add items.',
+                                    'No Items Added, Tap on + icon to add Pages.',
                               ),
                             )
-                          : Expanded(child: _buildFormSectionsList()),
+                          : Expanded(
+                              child: Obx(
+                                () => PageView(
+                                  controller: _pageController,
+                                  // physics: const NeverScrollableScrollPhysics(),
+                                  onPageChanged: (value) {
+                                    _currentPage.value = value;
+                                  },
+                                  children: _task.value.pages
+                                      .map((e) => Container(
+                                            child: _buildFormSectionsList(
+                                                currentPage:
+                                                    _currentPage.value),
+                                          ))
+                                      .toList(),
+                                ),
+                              ),
+                            )
+
+                      // : Expanded(child: _buildFormSectionsList()),
                     ],
                   ),
                 ),
@@ -149,92 +161,276 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
     return Container(
       color: Colors.transparent,
       child: Padding(
-        padding: const EdgeInsets.all(8.0),
+        padding: const EdgeInsets.symmetric(horizontal: 6.0),
         child: ReUsableContainer(
           color: AppColors.primaryColor,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  onPressed: () {
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              IconButton(
+                onPressed: () {
+                  if (_currentPage.value > 0) {
+                    _pageController.previousPage(
+                        duration: const Duration(milliseconds: 500),
+                        curve: Curves.easeInOut);
+                  } else {
                     Get.back();
-                  },
-                  icon: const Icon(Icons.arrow_back_rounded),
+                  }
+                },
+                icon: const Icon(Icons.arrow_back_rounded),
+              ),
+              Flexible(
+                child: CustomTextWidget(
+                  text:
+                      'Page Number: ${_currentPage.value + 1}/${_task.value.pages.length}',
+                  fontSize: 14.0,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  fontWeight: FontWeight.w600,
                 ),
-                IconButton(
-                  onPressed: () => showAddSectionPopup(context),
-                  icon: const Icon(FontAwesomeIcons.circlePlus),
+              ),
+              PopupMenuButton<int>(
+                onSelected: (value) {
+                  if (value == 1) {
+                    if (_task.value.pages[_task.value.pages.length - 1].sections
+                        .isNotEmpty) {
+                      _task.value.pages.add(MyPage(sections: []));
+                      _task.refresh();
+                    } else {
+                      ToastMessage.showToastMessage(
+                          message:
+                              'Please Add atleast one section in the current page.',
+                          backgroundColor: Colors.red);
+                    }
+                  } else if (value == 2) {
+                    if (_currentPage.value != 0) {
+                      debugPrint('Removing Page: ${_currentPage.value}');
+                      // _task.value.pages.removeLast();
+                      _task.value.pages.removeAt(_currentPage.value);
+                      _pageController.jumpToPage(_task.value.pages.length - 1);
+                      _task.refresh();
+                    }
+                  } else {
+                    showAddSectionPopup(context);
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 1,
+                    child: Row(
+                      children: [
+                        Icon(Icons.chrome_reader_mode),
+                        SizedBox(width: 10),
+                        CustomTextWidget(
+                            text: "Add Page", textColor: Colors.black)
+                      ],
+                    ),
+                  ),
+                  if (_currentPage.value != 0)
+                    const PopupMenuItem(
+                      value: 2,
+                      child: Row(
+                        children: [
+                          Icon(Icons.list),
+                          SizedBox(width: 10),
+                          CustomTextWidget(
+                              text: "Remove Page", textColor: Colors.black)
+                        ],
+                      ),
+                    ),
+                  const PopupMenuItem(
+                    value: 3,
+                    child: Row(
+                      children: [
+                        Icon(Icons.list),
+                        SizedBox(width: 10),
+                        CustomTextWidget(
+                            text: "Add Section", textColor: Colors.black)
+                      ],
+                    ),
+                  ),
+                ],
+                offset: const Offset(0, 50),
+                color: Colors.white,
+                elevation: 2,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
                 ),
-              ],
-            ),
+              )
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildFormSectionsList() {
-    return ReUsableContainer(
-      showBackgroundShadow: false,
-      child: Column(
-        children: [
-          Expanded(
-            child: Obx(
-              () => ListView.builder(
-                shrinkWrap: true,
-                physics: const AlwaysScrollableScrollPhysics(),
-                itemCount: _task.value.formSections.length,
-                itemBuilder: (context, index) {
-                  final section = _task.value.formSections[index];
-                  return Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: ReUsableContainer(
-                      color: Colors.grey.shade300,
-                      showBackgroundShadow: false,
-                      child: Column(
-                        children: [
-                          ContainerHeading(
-                            heading: section.heading,
-                            onAdd: () => showAddElementPopup(context,
-                                sectionIndex: index),
-                            onDelete: () {
-                              _task.value.formSections.removeAt(index);
-                              _task.refresh();
-                            },
-                          ),
-                          _buildSectionElements(index),
-                        ],
-                      ),
+  Widget _buildFormSectionsList({required int currentPage}) {
+    return Column(
+      children: [
+        Expanded(
+          child: Obx(
+            () => ListView.builder(
+              shrinkWrap: true,
+              physics: const AlwaysScrollableScrollPhysics(),
+              itemCount: _task.value.pages[currentPage].sections.length,
+              itemBuilder: (context, index) {
+                final section = _task.value.pages[currentPage].sections[index];
+                return Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: ReUsableContainer(
+                    color: Colors.grey.shade300,
+                    child: Column(
+                      children: [
+                        ContainerHeading(
+                          heading: section.heading,
+                          onAdd: () {
+                            _hintTextController.clear();
+                            showAddElementPopup(context, sectionIndex: index);
+                          },
+                          onDelete: () {
+                            _task.value.pages[currentPage].sections
+                                .removeAt(index);
+                            _task.refresh();
+                          },
+                        ),
+                        _buildSectionElements(index, currentPage),
+                      ],
                     ),
-                  );
-                },
-              ),
+                  ),
+                );
+              },
             ),
           ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
+        ),
+        _task.value.pages.length == 1
+            ? SaveAndSubmitButton()
+            : _currentPage.value == 0
+                ? NextButton(pageController: _pageController)
+                : _currentPage.value == _task.value.pages.length - 1
+                    ? SaveAndSubmitButton()
+                    : BackAndNextButton(pageController: _pageController),
+      ],
+    );
+  }
+
+  Column SaveAndSubmitButton() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Visibility(
+          visible: widget.isTemplate ? false : widget.task == null,
+          child: CheckboxListTile(
+            contentPadding: EdgeInsets.zero,
+            activeColor: AppColors.blueTextColor,
+            controlAffinity: ListTileControlAffinity.leading,
+            title: const CustomTextWidget(
+              text: 'Save as template for future use',
+              fontSize: 12.0,
+            ),
+            value: _isTemplate.value,
+            onChanged: (value) {
+              _isTemplate.value = !_isTemplate.value;
+              _task.value.isTemplate = _isTemplate.value;
+            },
+          ),
+        ),
+        Obx(
+          () => Row(
             children: [
-              Visibility(
-                visible: widget.isTemplate ? false : widget.task == null,
-                child: CheckboxListTile(
-                  contentPadding: EdgeInsets.zero,
-                  activeColor: AppColors.blueTextColor,
-                  controlAffinity: ListTileControlAffinity.leading,
-                  title: const CustomTextWidget(
-                    text: 'Save as template for future use',
-                    fontSize: 12.0,
+              if (_task.value.isTemplate == true && _task.value.isForm == false)
+                Flexible(
+                  child: CustomButton(
+                    isLoading: false,
+                    buttonText: 'Send Report',
+                    onTap: () {
+                      showCustomPopup(
+                        context: context,
+                        width: context.width * 0.6,
+                        widget: Column(
+                          children: [
+                            const CustomTextWidget(
+                              text:
+                                  'Enter the name of the Customer you want to send this task as report via email.',
+                              fontSize: 10.0,
+                              maxLines: 5,
+                              textAlign: TextAlign.center,
+                            ),
+                            HeadingAndTextfield(
+                              title: 'Enter Customer Name',
+                              controller: _customerNameController,
+                              hintText: 'Customer Name',
+                              validator: (p0) {
+                                AppValidator.validateEmptyText(
+                                  fieldName: 'Customer Name',
+                                  value: p0,
+                                );
+                                return null;
+                              },
+                            ),
+                            HeadingAndTextfield(
+                              title: 'Enter Customer Email',
+                              controller: _customerEmailController,
+                              hintText: 'Customer Email',
+                              validator: (p0) {
+                                AppValidator.validateEmptyText(
+                                  fieldName: 'Customer Email',
+                                  value: p0,
+                                );
+                                return null;
+                              },
+                            ),
+                            CustomButton(
+                              buttonText: 'Send Report',
+                              onTap: () {
+                                if (_customerNameController.text.isNotEmpty &&
+                                    _customerEmailController.text.isNotEmpty) {
+                                  print(_task.value.isTemplate);
+                                  print(_task.value.isForm);
+                                  _task.value.isTemplate = false;
+                                  _task.value.isForm = true;
+                                  debugPrint('SubmittingTask');
+                                  _task.value.customerName =
+                                      _customerNameController.text.trim();
+                                  _task.value.customerEmail =
+                                      _customerEmailController.text.trim();
+                                  print(
+                                      'Customer Name: ${_task.value.customerName}');
+                                  print(
+                                      'Customer Email: ${_task.value.customerEmail}');
+                                  onSubmitTask(_task.value, _attachments);
+                                } else {
+                                  ToastMessage.showToastMessage(
+                                      message:
+                                          'Please Enter Customer Name and Email',
+                                      backgroundColor: Colors.red);
+                                }
+                              },
+                              isLoading: isLoading.value,
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
-                  value: _isTemplate.value,
-                  onChanged: (value) {
-                    _isTemplate.value = !_isTemplate.value;
-                    _task.value.isTemplate = _isTemplate.value;
-                  },
+                )
+              else
+                Visibility(
+                  visible: _currentPage.value != 0,
+                  child: Flexible(
+                    child: CustomButton(
+                      onTap: () {
+                        _pageController.previousPage(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOutCubic);
+                      },
+                      buttonText: 'Back',
+                      isLoading: false,
+                    ),
+                  ),
                 ),
-              ),
-              Obx(
-                () => CustomButton(
+              Flexible(
+                child: CustomButton(
+                  usePrimaryColor: true,
                   isLoading: isLoading.value,
                   buttonText: widget.task == null ? 'Submit' : 'Update',
                   onTap: () {
@@ -282,7 +478,17 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                                   if (_customerNameController.text.isNotEmpty &&
                                       _customerEmailController
                                           .text.isNotEmpty) {
+                                    print(_task.value.isTemplate);
+                                    print(_task.value.isForm);
                                     debugPrint('SubmittingTask');
+                                    _task.value.customerName =
+                                        _customerNameController.text.trim();
+                                    _task.value.customerEmail =
+                                        _customerEmailController.text.trim();
+                                    print(
+                                        'Customer Name: ${_task.value.customerName}');
+                                    print(
+                                        'Customer Email: ${_task.value.customerEmail}');
                                     onSubmitTask(_task.value, _attachments);
                                   } else {
                                     ToastMessage.showToastMessage(
@@ -309,16 +515,16 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
               ),
             ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _buildSectionElements(int sectionIndex) {
+  Widget _buildSectionElements(int sectionIndex, int currentPage) {
     return Obx(
       () => Column(
-        children:
-            _task.value.formSections[sectionIndex].elements.map((element) {
+        children: _task.value.pages[currentPage].sections[sectionIndex].elements
+            .map((element) {
           switch (element.type) {
             case MyCustomItemType.textfield:
               return HeadingAndTextfield(
@@ -327,7 +533,7 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                 controller: TextEditingController(text: element.value),
                 onChanged: (String? value) => element.value = value ?? '',
                 onDelete: () {
-                  _task.value.formSections[sectionIndex].elements
+                  _task.value.pages[currentPage].sections[sectionIndex].elements
                       .remove(element);
                   _task.refresh();
                 },
@@ -340,7 +546,7 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                 controller: TextEditingController(text: element.value),
                 onChanged: (String? value) => element.value = value ?? '',
                 onDelete: () {
-                  _task.value.formSections[sectionIndex].elements
+                  _task.value.pages[currentPage].sections[sectionIndex].elements
                       .remove(element);
                   _task.refresh();
                 },
@@ -353,7 +559,7 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                 showDeleteIcon: true,
                 onChange: (String value) => element.value = value,
                 onDelete: () {
-                  _task.value.formSections[sectionIndex].elements
+                  _task.value.pages[currentPage].sections[sectionIndex].elements
                       .remove(element);
                   _task.refresh();
                 },
@@ -380,7 +586,7 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                 onChange: (List<String> values) => element.value = values,
                 showDeleteIcon: true,
                 onDelete: () {
-                  _task.value.formSections[sectionIndex].elements
+                  _task.value.pages[currentPage].sections[sectionIndex].elements
                       .remove(element);
                   _task.refresh();
                 },
@@ -403,8 +609,8 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                   onTap: () async {
                     int? oldIndex;
                     if (attach != null) {
-                      final List<MyCustomElementModel> elements =
-                          _task.value.formSections[sectionIndex].elements;
+                      final List<MyCustomElementModel> elements = _task.value
+                          .pages[currentPage].sections[sectionIndex].elements;
                       oldIndex = elements.indexOf(element);
                     }
                     XFile? image = await ImagePicker().pickImage(
@@ -439,7 +645,8 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                   },
                   showDeleteIcon: true,
                   onDelete: () {
-                    _task.value.formSections[sectionIndex].elements
+                    _task.value.pages[currentPage].sections[sectionIndex]
+                        .elements
                         .remove(element);
                     _task.refresh();
                   },
@@ -532,11 +739,12 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
               buttonText: 'Add Section',
               onTap: () {
                 if (_hintTextController.text.isNotEmpty) {
-                  MyFormSection newSection = MyFormSection(
+                  MySection newSection = MySection(
                     heading: _hintTextController.text,
                     elements: [],
                   );
-                  _task.value.formSections.add(newSection);
+                  _task.value.pages[_currentPage.value].sections
+                      .add(newSection);
                   _hintTextController.clear();
                   _task.refresh();
                   Get.back();
@@ -571,7 +779,7 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
             _buildAddCheckboxAndRadioButton(context,
                 sectionIndex: sectionIndex, isCheckbox: true),
             _buildAddAttachmentButton(context, sectionIndex: sectionIndex),
-            _buildAddGridButton(context, sectionIndex: sectionIndex),
+            // _buildAddGridButton(context, sectionIndex: sectionIndex),
           ],
         ),
       ),
@@ -612,55 +820,13 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                           : MyCustomItemType.textfield,
                       value: '',
                     );
-                    _task.value.formSections[sectionIndex].elements
+                    _task.value.pages[_currentPage.value].sections[sectionIndex]
+                        .elements
                         .add(myCustomItemModel);
                     _task.refresh();
                     Get.back();
                     _hintTextController.clear();
                   }
-                },
-                isLoading: false,
-              ),
-            ],
-          ),
-        );
-      },
-      isLoading: false,
-    );
-  }
-
-  Widget _buildAddGridButton(BuildContext context,
-      {required int sectionIndex}) {
-    TextEditingController rowsController = TextEditingController();
-
-    return CustomButton(
-      usePrimaryColor: true,
-      buttonText: 'Add Grid',
-      onTap: () {
-        showCustomPopup(
-          context: context,
-          width: context.width * 0.3,
-          widget: Column(
-            children: [
-              Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    ReUsableTextField(
-                      hintText: 'Enter Number of Rows',
-                      controller: rowsController,
-                      keyboardType: TextInputType.number,
-                      validator: (value) => AppValidator.validateEmptyText(
-                          fieldName: 'Rows', value: value),
-                    ),
-                  ],
-                ),
-              ),
-              CustomButton(
-                usePrimaryColor: true,
-                buttonText: 'Add Grid',
-                onTap: () {
-                  if (_formKey.currentState!.validate()) {}
                 },
                 isLoading: false,
               ),
@@ -718,7 +884,8 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                       type: MyCustomItemType.attachment,
                       value: null,
                     );
-                    _task.value.formSections[sectionIndex].elements
+                    _task.value.pages[_currentPage.value].sections[sectionIndex]
+                        .elements
                         .add(myCustomItemModel);
                     Get.back();
                     _hintTextController.clear();
@@ -812,7 +979,8 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                   options: options,
                   value: isCheckbox ? <String>[] : '',
                 );
-                _task.value.formSections[sectionIndex].elements
+                _task.value.pages[_currentPage.value].sections[sectionIndex]
+                    .elements
                     .add(myCustomItemModel);
                 _task.refresh();
                 Get.back();
@@ -831,49 +999,53 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
   }
 
   onSubmitTask(MyCustomTask e, List<Uint8List> attachments) async {
-    try {
-      isLoading(true);
-      final urls = <String>[];
-      TaskResponse response =
-          await TaskService().addCustomTaskFiles(attachments: attachments);
-      if (response.isSuccess) {
-        urls.assignAll(response.data);
-        for (MyFormSection section in e.formSections) {
-          for (MyCustomElementModel element in section.elements) {
-            if (element.type == MyCustomItemType.attachment &&
-                element.value is int) {
-              element.value = urls[element.value];
-            }
-          }
-        }
-        final isSuccess =
-            await TaskService().createCustomTask(taskData: e.toMap());
-        if (isSuccess) {
-          ToastMessage.showToastMessage(
-              message: 'Task Created Successfully',
-              backgroundColor: Colors.green);
-          final CustomTaskController controller = Get.find();
-          controller.getAllCustomTasks(page: 1);
-          controller.getAllCustomTasks(page: 1, isTemplate: true);
-          Get.back();
-          Get.back();
-        }
-      } else {
-        print("Error in onSubmitTask");
-        ToastMessage.showToastMessage(
-            message: 'Failed to create task, please try again',
-            backgroundColor: Colors.red);
-        urls.clear();
-      }
-    } catch (e) {
-      print("Error in onSubmitTask: $e");
-      ToastMessage.showToastMessage(
-          message: 'Something went wrong, please try again',
-          backgroundColor: Colors.red);
-    } finally {
-      isLoading(false);
-    }
+    debugPrint('onSubmitTask: ${jsonEncode(e.toMap())}');
   }
+
+  // onSubmitTask(MyCustomTask e, List<Uint8List> attachments) async {
+  //   try {
+  //     isLoading(true);
+  //     final urls = <String>[];
+  //     TaskResponse response =
+  //         await TaskService().addCustomTaskFiles(attachments: attachments);
+  //     if (response.isSuccess) {
+  //       urls.assignAll(response.data);
+  //       for (MySection section in e.pages[_currentPage.value].sections) {
+  //         for (MyCustomElementModel element in section.elements) {
+  //           if (element.type == MyCustomItemType.attachment &&
+  //               element.value is int) {
+  //             element.value = urls[element.value];
+  //           }
+  //         }
+  //       }
+  //       final isSuccess =
+  //           await TaskService().createCustomTask(taskData: e.toMap());
+  //       if (isSuccess) {
+  //         ToastMessage.showToastMessage(
+  //             message: 'Task Created Successfully',
+  //             backgroundColor: Colors.green);
+  //         final CustomTaskController controller = Get.find();
+  //         controller.getAllCustomTasks(page: 1);
+  //         controller.getAllCustomTasks(page: 1, isTemplate: true);
+  //         Get.back();
+  //         Get.back();
+  //       }
+  //     } else {
+  //       print("Error in onSubmitTask");
+  //       ToastMessage.showToastMessage(
+  //           message: 'Failed to create task, please try again',
+  //           backgroundColor: Colors.red);
+  //       urls.clear();
+  //     }
+  //   } catch (e) {
+  //     print("Error in onSubmitTask: $e");
+  //     ToastMessage.showToastMessage(
+  //         message: 'Something went wrong, please try again',
+  //         backgroundColor: Colors.red);
+  //   } finally {
+  //     isLoading(false);
+  //   }
+  // }
 
   onUpdateTask(MyCustomTask e, List<Uint8List> attachments) async {
     try {
@@ -884,7 +1056,7 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
       if (response.isSuccess) {
         urls.assignAll(response.data);
         print(urls);
-        for (MyFormSection section in e.formSections) {
+        for (MySection section in e.pages[_currentPage.value].sections) {
           for (MyCustomElementModel element in section.elements) {
             if (element.type == MyCustomItemType.attachment &&
                 element.value is int) {
@@ -917,6 +1089,69 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
     } finally {
       isLoading(false);
     }
+  }
+}
+
+class NextButton extends StatelessWidget {
+  const NextButton({
+    super.key,
+    required PageController pageController,
+  }) : _pageController = pageController;
+
+  final PageController _pageController;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomButton(
+      onTap: () {
+        _pageController.nextPage(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOutCubic);
+      },
+      buttonText: 'Next',
+      isLoading: false,
+      usePrimaryColor: true,
+    );
+  }
+}
+
+class BackAndNextButton extends StatelessWidget {
+  const BackAndNextButton({
+    super.key,
+    required PageController pageController,
+  }) : _pageController = pageController;
+
+  final PageController _pageController;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Flexible(
+          child: CustomButton(
+            onTap: () {
+              _pageController.previousPage(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOutCubic);
+            },
+            buttonText: 'Back',
+            isLoading: false,
+          ),
+        ),
+        Flexible(
+          child: CustomButton(
+            usePrimaryColor: true,
+            onTap: () {
+              _pageController.nextPage(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOutCubic);
+            },
+            buttonText: 'Next',
+            isLoading: false,
+          ),
+        ),
+      ],
+    );
   }
 }
 

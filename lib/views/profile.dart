@@ -7,9 +7,11 @@ import 'package:flutter_mekanix_app/helpers/custom_button.dart';
 import 'package:flutter_mekanix_app/helpers/custom_text.dart';
 import 'package:flutter_mekanix_app/helpers/reusable_textfield.dart';
 import 'package:flutter_mekanix_app/helpers/storage_helper.dart';
+import 'package:flutter_mekanix_app/helpers/tabbar.dart';
 import 'package:flutter_mekanix_app/helpers/toast.dart';
 import 'package:flutter_mekanix_app/services/auth_service.dart';
 import 'package:flutter_mekanix_app/views/auth/login.dart';
+import 'package:flutter_mekanix_app/views/task/widgets/heading_and_textfield.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -30,142 +32,197 @@ class _ProfileSectionState extends State<ProfileSection> {
   TextEditingController lastNameController = TextEditingController();
   final ImagePicker picker = ImagePicker();
 
-  // XFile? userImage;
-  // Uint8List? userImageInBytes;
-
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: false,
-      onPopInvoked: (didPop) {
-        widget.sideMenu.changePage(0);
-      },
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: SizedBox(
-          height: context.height,
-          width: context.width * 0.25,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                InkWell(
-                  onTap: updateUserImage,
-                  child: Obx(() => Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          CircleAvatar(
-                            radius: 45,
-                            backgroundColor: Colors.white,
-                            backgroundImage: universalController
-                                    .userImageURL.value.isNotEmpty
-                                ? NetworkImage(
-                                    universalController.userImageURL.value)
-                                : const AssetImage(
-                                        'assets/images/placeholder.png')
-                                    as ImageProvider, // Cast AssetImage to ImageProvider
-                          ),
-                          if (circularLoading.value)
-                            CircularProgressIndicator(
-                              color: AppColors.primaryColor,
-                              strokeWidth: 2.0,
-                            ),
-                          // Show circular loading indicator
-                        ],
-                      )),
-
-                  // child: Obx(
-                  //   () => CircleAvatar(
-                  //       radius: 45,
-                  //       backgroundColor: Colors.white,
-                  //       // backgroundImage:
-                  //       //     MemoryImage(universalController.userImageInBytes!),
-                  //       backgroundImage: circularLoading.value == true
-                  //           ? null
-                  //           : universalController.userImageURL.value != ''
-                  //               ? NetworkImage(
-                  //                   universalController.userImageURL.value ??
-                  //                       '')
-                  //               : const AssetImage(
-                  //                       'assets/images/placeholder.png')
-                  //                   as ImageProvider),
-                  // ),
-                ),
-                const SizedBox(height: 12.0),
-                Obx(
-                  () => CustomTextWidget(
-                    text: (universalController.userInfo.value['first_name'] ??
-                            '') +
-                        ' ' +
-                        (universalController.userInfo['last_name'] ?? ''),
-                    fontWeight: FontWeight.w500,
-                    fontSize: 20,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                  ),
-                ),
-                CustomTextWidget(
-                  text: universalController.userInfo.value['email'] ?? '',
-                  fontWeight: FontWeight.w300,
-                  fontSize: 14,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  textColor: AppColors.lightTextColor,
-                ),
-                Obx(
-                  () => Padding(
-                    padding: EdgeInsets.symmetric(
-                        vertical: context.height * 0.03,
-                        horizontal: context.width * 0.01),
-                    child: Column(
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: PopScope(
+        canPop: false,
+        onPopInvoked: (didPop) {
+          widget.sideMenu.changePage(0);
+        },
+        child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: DefaultTabController(
+              length: 2,
+              child: Column(
+                children: [
+                  const CustomTabBar(
+                      title1: 'Profile', title2: 'Change Password'),
+                  Expanded(
+                    child: TabBarView(
                       children: [
-                        ReUsableTextField(
-                            controller: firstNameController,
-                            hintText: universalController
-                                    .userInfo.value['first_name'] ??
-                                ''),
-                        ReUsableTextField(
-                            controller: lastNameController,
-                            hintText: universalController
-                                    .userInfo.value['last_name'] ??
-                                ''),
-                        ReUsableTextField(
-                            hintText:
-                                universalController.userInfo.value['email'] ??
-                                    '',
-                            readOnly: true),
-                        Obx(
-                          () => CustomButton(
-                            isLoading: isLoading.value,
-                            buttonText: 'Update',
-                            onTap: () {
-                              updateProfileInfo();
-                            },
-                            usePrimaryColor: true,
-                            textColor: Colors.black87,
-                          ),
-                        ),
-                        CustomButton(
-                          isLoading: false,
-                          buttonText: 'Logout',
-                          onTap: () {
-                            storage.remove('token');
-                            storage.remove('user_info');
-                            Get.delete<UniversalController>();
-                            Get.delete<DashboardController>();
-                            // Get.delete<EnginesController>();
-                            Get.offAll(() => LoginScreen());
-                          },
-                          textColor: Colors.white60,
-                        )
+                        ProfileSectionView(context),
+                        ChangePasswordSectionView(context),
                       ],
                     ),
+                  )
+                ],
+              ),
+            )),
+      ),
+    );
+  }
+
+  SingleChildScrollView ProfileSectionView(BuildContext context) {
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const SizedBox(height: 22.0),
+          InkWell(
+            onTap: updateUserImage,
+            child: Obx(() => Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    CircleAvatar(
+                      radius: 45,
+                      backgroundColor: Colors.white,
+                      backgroundImage: universalController
+                              .userImageURL.value.isNotEmpty
+                          ? NetworkImage(universalController.userImageURL.value)
+                          : const AssetImage('assets/images/placeholder.png')
+                              as ImageProvider,
+                    ),
+                    if (circularLoading.value)
+                      CircularProgressIndicator(
+                        color: AppColors.primaryColor,
+                        strokeWidth: 2.0,
+                      ),
+                    // Show circular loading indicator
+                  ],
+                )),
+          ),
+          const SizedBox(height: 12.0),
+          Obx(
+            () => CustomTextWidget(
+              text: (universalController.userInfo.value['first_name'] ?? '') +
+                  ' ' +
+                  (universalController.userInfo['last_name'] ?? ''),
+              fontWeight: FontWeight.w500,
+              fontSize: 20,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+            ),
+          ),
+          CustomTextWidget(
+            text: universalController.userInfo.value['email'] ?? '',
+            fontWeight: FontWeight.w300,
+            fontSize: 14,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            textColor: AppColors.lightTextColor,
+          ),
+          Obx(
+            () => Padding(
+              padding: EdgeInsets.symmetric(
+                  vertical: context.height * 0.03,
+                  horizontal: context.width * 0.01),
+              child: Column(
+                children: [
+                  ReUsableTextField(
+                      onTap: () {
+                        firstNameController.text =
+                            universalController.userInfo.value['first_name'];
+                      },
+                      controller: firstNameController,
+                      hintText:
+                          universalController.userInfo.value['first_name'] ??
+                              ''),
+                  ReUsableTextField(
+                      onTap: () {
+                        lastNameController.text =
+                            universalController.userInfo.value['last_name'];
+                      },
+                      controller: lastNameController,
+                      hintText:
+                          universalController.userInfo.value['last_name'] ??
+                              ''),
+                  ReUsableTextField(
+                      onTap: () {
+                        ToastMessage.showToastMessage(
+                            message: 'You are not allowed to change your email',
+                            backgroundColor: Colors.red);
+                      },
+                      hintText:
+                          universalController.userInfo.value['email'] ?? '',
+                      readOnly: true),
+                  Obx(
+                    () => CustomButton(
+                      isLoading: isLoading.value,
+                      buttonText: 'Update',
+                      onTap: () {
+                        updateProfileInfo();
+                      },
+                      usePrimaryColor: true,
+                      textColor: Colors.black87,
+                    ),
+                  ),
+                  CustomButton(
+                    isLoading: false,
+                    buttonText: 'Logout',
+                    onTap: () {
+                      storage.remove('token');
+                      storage.remove('user_info');
+                      Get.delete<UniversalController>();
+                      Get.delete<DashboardController>();
+                      // Get.delete<EnginesController>();
+                      Get.offAll(() => LoginScreen());
+                    },
+                    textColor: Colors.white60,
+                  )
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  SingleChildScrollView ChangePasswordSectionView(BuildContext context) {
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Padding(
+            padding: EdgeInsets.symmetric(
+                vertical: context.height * 0.03,
+                horizontal: context.width * 0.01),
+            child: Column(
+              children: [
+                const CustomTextWidget(
+                  text: 'Change Password',
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+                const SizedBox(height: 22.0),
+                HeadingAndTextfield(
+                  controller: firstNameController,
+                  title: 'Current Password',
+                ),
+                HeadingAndTextfield(
+                  title: 'New Password',
+                  controller: lastNameController,
+                ),
+                const HeadingAndTextfield(
+                  title: 'Confirm New Password',
+                ),
+                Obx(
+                  () => CustomButton(
+                    isLoading: isLoading.value,
+                    buttonText: 'Change Password',
+                    onTap: () {
+                      updateProfileInfo();
+                    },
+                    usePrimaryColor: true,
+                    textColor: Colors.black87,
                   ),
                 ),
               ],
             ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -174,8 +231,12 @@ class _ProfileSectionState extends State<ProfileSection> {
     try {
       isLoading.value = true;
       bool success = await AuthService().updateProfile(
-          firstName: firstNameController.text.trim(),
-          lastName: lastNameController.text.trim(),
+          firstName: firstNameController.text.trim().isEmpty
+              ? universalController.userInfo.value['first_name']
+              : firstNameController.text.trim(),
+          lastName: lastNameController.text.trim().isEmpty
+              ? universalController.userInfo.value['last_name']
+              : lastNameController.text.trim(),
           // userImageInBytes: universalController.userImageInBytes!,
           token: storage.read('token'));
       isLoading.value = false;

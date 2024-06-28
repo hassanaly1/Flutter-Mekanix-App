@@ -51,11 +51,13 @@ class HeadingAndTextfield extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              CustomTextWidget(
-                text: title,
-                fontWeight: FontWeight.w500,
-                maxLines: 1,
-                fontSize: fontSize,
+              Flexible(
+                child: CustomTextWidget(
+                  text: title,
+                  fontWeight: FontWeight.w500,
+                  maxLines: 2,
+                  fontSize: fontSize ?? 12,
+                ),
               ),
               Visibility(
                 visible: showEyeIcon,

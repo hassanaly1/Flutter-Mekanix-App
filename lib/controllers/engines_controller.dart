@@ -38,7 +38,7 @@ class EnginesController extends GetxController {
 
   @override
   onInit() {
-    getAllEngines(page: 1);
+    // getAllEngines(page: 1);
     scrollController.addListener(() {
       if (scrollController.position.pixels ==
           scrollController.position.maxScrollExtent) {

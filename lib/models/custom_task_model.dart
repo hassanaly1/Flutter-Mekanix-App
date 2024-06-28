@@ -1,9 +1,9 @@
 class MyCustomTask {
   final String? id;
   final String name;
-  final String? customerName, customerEmail;
+  String? customerName, customerEmail;
   bool isForm, isTemplate;
-  final List<MyFormSection> formSections;
+  final List<MyPage> pages;
 
   MyCustomTask({
     this.id,
@@ -12,7 +12,7 @@ class MyCustomTask {
     this.customerEmail,
     required this.isForm,
     required this.isTemplate,
-    required this.formSections,
+    required this.pages,
   });
 
   Map<String, dynamic> toMap() {
@@ -20,7 +20,9 @@ class MyCustomTask {
       'is_template': isTemplate.toString(),
       'is_form': isForm.toString(),
       'name': name,
-      'formSections': formSections.map((e) => e.toMap()).toList(),
+      'customer_name': customerName,
+      'customer_email': customerEmail,
+      'pages': pages.map((e) => e.toMap()).toList(),
     };
   }
 
@@ -32,17 +34,39 @@ class MyCustomTask {
       customerEmail: map['customer_email'],
       isForm: !map['is_template'],
       isTemplate: map['is_template'],
-      formSections: map["formSections"] == null
+      pages: map["pages"] == null
           ? []
-          : List<MyFormSection>.from(
-              map["formSections"]!.map((x) => MyFormSection.fromMap(x)),
+          : List<MyPage>.from(
+              map["pages"]!.map((x) => MyPage.fromMap(x)),
             ),
     );
   }
 }
 
-class MyFormSection {
-  MyFormSection({required this.heading, required this.elements});
+class MyPage {
+  final List<MySection> sections;
+
+  MyPage({required this.sections});
+
+  Map<String, dynamic> toMap() {
+    return {
+      'sections': sections.map((MySection section) => section.toMap()).toList(),
+    };
+  }
+
+  static fromMap(Map<String, dynamic> map) {
+    return MyPage(
+      sections: map["sections"] == null
+          ? []
+          : List<MySection>.from(
+              map["sections"]!.map((x) => MySection.fromMap(x)),
+            ),
+    );
+  }
+}
+
+class MySection {
+  MySection({required this.heading, required this.elements});
 
   final String heading;
   final List<MyCustomElementModel> elements;
@@ -55,7 +79,7 @@ class MyFormSection {
   }
 
   static fromMap(Map<String, dynamic> map) {
-    return MyFormSection(
+    return MySection(
       heading: map['heading'],
       elements: map["elements"] == null
           ? []

@@ -25,9 +25,9 @@ class ContainerHeading extends StatelessWidget {
           Flexible(
             child: CustomTextWidget(
               text: heading,
-              fontSize: 16.0,
+              fontSize: 14.0,
               fontWeight: FontWeight.w600,
-              maxLines: 2,
+              maxLines: 5,
               textAlign: TextAlign.center,
             ),
           ),

@@ -6,17 +6,6 @@ class DashboardController extends GetxController {
   final PageController pageController = PageController();
   late TabController tabController;
 
-  // var isLoading = false.obs;
-  // var isFormsAreLoading = false.obs;
-  // var isEnginesAreLoading = false.obs;
-  // var isTemplatesAreLoading = false.obs;
-  // var templateCount = 0.obs;
-  // var formCount = 0.obs;
-  // var engineCount = 0.obs;
-  // var templateAnalytics = <Analytic>[].obs;
-  // var formAnalytics = <Analytic>[].obs;
-  // var engineAnalytics = <Analytic>[].obs;
-
   final SideMenuController sideMenu = Get.put(SideMenuController());
   RxInt currentPage = 0.obs;
 

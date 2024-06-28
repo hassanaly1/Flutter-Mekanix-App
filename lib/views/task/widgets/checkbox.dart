@@ -31,6 +31,7 @@ class CustomCheckboxWidget extends StatelessWidget {
           text: heading,
           fontWeight: FontWeight.w500,
           maxLines: 2,
+          fontSize: 12,
         ),
         Obx(
           () => ReUsableContainer(
@@ -39,11 +40,13 @@ class CustomCheckboxWidget extends StatelessWidget {
             child: Column(
               children: options
                   .map((option) => CheckboxListTile(
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         activeColor: AppColors.blueTextColor,
                         contentPadding: EdgeInsets.zero,
                         dense: true,
-                        title: CustomTextWidget(text: option),
+                        title: CustomTextWidget(text: option, fontSize: 11),
                         controlAffinity: ListTileControlAffinity.leading,
+                        visualDensity: VisualDensity.compact,
                         value: selectedValues.contains(option),
                         onChanged: (bool? value) {
                           if (value != null) {

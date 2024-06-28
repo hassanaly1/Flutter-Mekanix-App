@@ -28,11 +28,12 @@ class CustomRadioButton extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 6.0),
+        // const SizedBox(height: 6.0),
         CustomTextWidget(
           text: heading,
           fontWeight: FontWeight.w500,
           maxLines: 2,
+          fontSize: 12,
         ),
         Obx(
           () => ReUsableContainer(
@@ -46,6 +47,7 @@ class CustomRadioButton extends StatelessWidget {
                   child: Row(
                     children: [
                       Radio(
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         visualDensity: VisualDensity.compact,
                         activeColor: AppColors.blueTextColor,
                         value: option,
@@ -55,7 +57,10 @@ class CustomRadioButton extends StatelessWidget {
                           if (value is String) onChange(value);
                         },
                       ),
-                      CustomTextWidget(text: option),
+                      CustomTextWidget(
+                        text: option,
+                        fontSize: 11.0,
+                      ),
                     ],
                   ),
                 );

@@ -10,8 +10,7 @@ class MyBarChart extends StatefulWidget {
   final String title;
   final List<Analytic> data;
 
-  const MyBarChart({Key? key, required this.data, required this.title})
-      : super(key: key);
+  const MyBarChart({super.key, required this.data, required this.title});
 
   @override
   State<StatefulWidget> createState() => MyBarChartState();

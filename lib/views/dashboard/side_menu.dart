@@ -8,7 +8,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
 
 class SideMenuCard extends StatelessWidget {
-  SideMenuCard(
+  const SideMenuCard(
       {super.key,
       required this.sideMenu,
       required this.scaffoldKey,

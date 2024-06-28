@@ -40,7 +40,7 @@ class UniversalController extends GetxController {
     userInfo.value = storage.read('user_info') ?? {};
     userImageURL.value = storage.read('user_info')['profile'];
     debugPrint('UserImageAtStart: $userImageURL');
-    fetchUserAnalyticsData();
+    // fetchUserAnalyticsData();
   }
 
   updateUserInfo(Map<String, dynamic> userInfo) {

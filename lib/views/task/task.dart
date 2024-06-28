@@ -10,6 +10,7 @@ import 'package:flutter_mekanix_app/helpers/dropdown.dart';
 import 'package:flutter_mekanix_app/helpers/reusable_container.dart';
 import 'package:flutter_mekanix_app/helpers/tabbar.dart';
 import 'package:flutter_mekanix_app/helpers/toast.dart';
+import 'package:flutter_mekanix_app/models/custom_task_model.dart';
 import 'package:flutter_mekanix_app/services/engine_service.dart';
 import 'package:flutter_mekanix_app/views/task/custom_task.dart';
 import 'package:flutter_mekanix_app/views/task/scan_qrcode.dart';
@@ -41,6 +42,13 @@ class _TaskScreenState extends State<TaskScreen> {
     controller.getAllCustomTasks(page: 1);
     controller.getAllCustomTasks(page: 1, isTemplate: true);
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    reportNameController.dispose();
+    super.dispose();
   }
 
   @override
@@ -96,38 +104,27 @@ class _TaskScreenState extends State<TaskScreen> {
                 },
                 body: Column(
                   children: [
-                    // ReUsableTextField(
-                    //   controller: controller.searchController,
-                    //   hintText: 'Search Task',
-                    //   suffixIcon: const Icon(Icons.search_sharp),
-                    //   onChanged: (value) {
-                    //     if (currentPage.value == 0) {
-                    //       debugPrint('SearchingSubmittedTasks');
-                    //       controller.getAllCustomTasks(searchName: value);
-                    //     } else {
-                    //       debugPrint('SearchingTemplates');
-                    //       controller.getAllCustomTasks(
-                    //           searchName: value, isTemplate: true);
-                    //     }
-                    //   },
-                    // ),
-                    const Padding(
-                      padding: EdgeInsets.all(8.0),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
                       child: CustomTabBar(
-                        title1: 'Submitted Tasks',
+                        onTap: (page) => currentPage.value = page,
+                        title1: 'Submitted Reports',
                         title2: 'Templates',
                       ),
                     ),
                     Expanded(
                       child: TabBarView(
+                        physics: const NeverScrollableScrollPhysics(),
                         children: [
                           TaskListView(
                             isTemplate: false,
                             controller: controller,
+                            universalController: widget.universalController,
                           ),
                           TaskListView(
                             isTemplate: true,
                             controller: controller,
+                            universalController: widget.universalController,
                           ),
                         ],
                       ),
@@ -180,8 +177,10 @@ class TopSection extends StatelessWidget {
                       icon: Icon(FontAwesomeIcons.circlePlus,
                           color: Colors.transparent),
                     ),
-                    const CustomTextWidget(
-                      text: 'Custom Task',
+                    CustomTextWidget(
+                      text: currentPage == 0
+                          ? 'Create Report'
+                          : 'Create Template',
                       fontSize: 16.0,
                       maxLines: 2,
                       textAlign: TextAlign.center,
@@ -189,12 +188,14 @@ class TopSection extends StatelessWidget {
                     ),
                     IconButton(
                       onPressed: () {
+                        reportNameController.clear();
                         CustomPopup.show(
-                            context: context,
-                            reportNameController: reportNameController,
-                            controller: controller,
-                            universalController: universalController,
-                            currentPage: currentPage);
+                          context: context,
+                          reportNameController: reportNameController,
+                          controller: controller,
+                          universalController: universalController,
+                          currentPage: currentPage,
+                        );
                       },
                       icon: const Icon(FontAwesomeIcons.circlePlus),
                     ),
@@ -212,11 +213,13 @@ class TopSection extends StatelessWidget {
 class TaskListView extends StatelessWidget {
   final bool isTemplate;
   final CustomTaskController controller;
+  final UniversalController universalController;
 
   const TaskListView({
     super.key,
     required this.isTemplate,
     required this.controller,
+    required this.universalController,
   });
 
   Future<void> _refreshTasks() {
@@ -266,13 +269,20 @@ class TaskListView extends StatelessWidget {
                 child: ReUsableContainer(
                   child: ListTile(
                     onTap: () {
-                      Get.to(
-                        () => CustomTaskScreen(
-                          reportName: task.name,
-                          task: task,
-                          isTemplate: task.isTemplate,
-                        ),
-                      );
+                      isTemplate
+                          ? CustomTemplatePopup.show(
+                              context: context,
+                              task: task,
+                              controller: controller,
+                              universalController: universalController,
+                            )
+                          : Get.to(
+                              () => CustomTaskScreen(
+                                reportName: task.name,
+                                task: task,
+                                isTemplate: task.isTemplate,
+                              ),
+                            );
                     },
                     trailing: InkWell(
                       onTap: () {
@@ -292,10 +302,38 @@ class TaskListView extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                     title: CustomTextWidget(
-                      text: task.name,
-                      fontSize: 16.0,
+                      text: !isTemplate
+                          ? task.customerName!.isEmpty
+                              ? 'No Name Assigned'
+                              : task.customerName!
+                          : task.name,
+                      fontSize: 14.0,
+                      maxLines: 2,
                       fontWeight: FontWeight.w600,
                     ),
+                    subtitle: isTemplate
+                        ? null
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              CustomTextWidget(
+                                fontSize: 12.0,
+                                text: task.name.isEmpty
+                                    ? 'No Name Assigned'
+                                    : task.name,
+                                fontWeight: FontWeight.w600,
+                                textColor: AppColors.lightTextColor,
+                              ),
+                              CustomTextWidget(
+                                fontSize: 12.0,
+                                text: task.customerEmail!.isEmpty
+                                    ? 'No Email Assigned'
+                                    : task.customerEmail!,
+                                fontWeight: FontWeight.w300,
+                                textColor: AppColors.lightTextColor,
+                              ),
+                            ],
+                          ),
                     titleAlignment: ListTileTitleAlignment.center,
                   ),
                 ),
@@ -318,20 +356,66 @@ class CustomPopup {
   }) {
     showCustomPopup(
       context: context,
-      width: context.isLandscape ? context.width * 0.3 : context.width * 0.6,
+      width: context.isLandscape ? context.width * 0.4 : context.width * 0.8,
+      widget: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CustomTextWidget(
+            text: 'Create New ${currentPage == 0 ? 'Report' : 'Template'}',
+            fontSize: 16.0,
+            fontWeight: FontWeight.w600,
+          ),
+          const SizedBox(height: 12.0),
+          HeadingAndTextfield(
+            // hintText: currentPage.toString(),
+            title: 'Enter ${currentPage == 0 ? 'Report' : 'Template'} Name',
+            fontSize: 12.0,
+            controller: reportNameController,
+          ),
+          CustomButton(
+            buttonText: 'Create ${currentPage == 0 ? 'Report' : 'Template'}',
+            onTap: () {
+              if (reportNameController.text.isNotEmpty) {
+                Get.back();
+                Get.to(
+                  () => CustomTaskScreen(
+                    reportName: reportNameController.text.trim(),
+                    isTemplate: currentPage == 0 ? false : true,
+                  ),
+                );
+              } else {
+                ToastMessage.showToastMessage(
+                    message: 'Please Enter Report Name.',
+                    backgroundColor: AppColors.blueTextColor);
+              }
+            },
+            isLoading: false,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class CustomTemplatePopup {
+  static void show({
+    required BuildContext context,
+    required MyCustomTask task,
+    required CustomTaskController controller,
+    required UniversalController universalController,
+  }) {
+    showCustomPopup(
+      context: context,
+      width: context.isLandscape ? context.width * 0.4 : context.width * 0.8,
       widget: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const CustomTextWidget(
-            text: 'New Task',
-            fontSize: 16.0,
-            fontWeight: FontWeight.w600,
-          ),
-          const SizedBox(height: 24.0),
-          HeadingAndTextfield(
-            title: 'Enter ${currentPage == 0 ? 'Report' : 'Template'} Name',
+            text:
+                'Please select the engine first for which you need to create this report.',
             fontSize: 12.0,
-            controller: reportNameController,
+            maxLines: 5,
+            fontWeight: FontWeight.w600,
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -428,32 +512,38 @@ class CustomPopup {
               ),
             ),
           ),
-          CustomButton(
-            buttonText: 'Create',
-            onTap: () {
-              if (reportNameController.text.isNotEmpty) {
+          Obx(
+            () => CustomButton(
+              usePrimaryColor:
+                  controller.engineBrandId.value.isNotEmpty ? true : false,
+              buttonText: 'Create New Report',
+              fontSize: 12.0,
+              onTap: () {
                 if (controller.engineBrandName.value.isNotEmpty &&
                     controller.engineBrandId.value.isNotEmpty) {
                   Get.back();
                   Get.to(
                     () => CustomTaskScreen(
-                      reportName: reportNameController.text.trim(),
-                      isTemplate: currentPage == 0 ? false : true,
+                      reportName: task.name,
+                      task: task,
+                      isTemplate: task.isTemplate,
                     ),
                   );
+                  // Get.to(
+                  //   () => CustomTaskScreen(
+                  //     reportName: reportNameController.text.trim(),
+                  //     isTemplate: currentPage == 0 ? false : true,
+                  //   ),
+                  // );
                   // reportNameController.clear();
                 } else {
                   ToastMessage.showToastMessage(
                       message: 'Please Select Engine from the Dropdown.',
                       backgroundColor: AppColors.blueTextColor);
                 }
-              } else {
-                ToastMessage.showToastMessage(
-                    message: 'Please Enter Report Name.',
-                    backgroundColor: AppColors.blueTextColor);
-              }
-            },
-            isLoading: false,
+              },
+              isLoading: false,
+            ),
           ),
         ],
       ),
