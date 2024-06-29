@@ -7,7 +7,6 @@ import 'package:flutter_mekanix_app/helpers/custom_button.dart';
 import 'package:flutter_mekanix_app/helpers/custom_text.dart';
 import 'package:flutter_mekanix_app/helpers/reusable_textfield.dart';
 import 'package:flutter_mekanix_app/helpers/storage_helper.dart';
-import 'package:flutter_mekanix_app/helpers/tabbar.dart';
 import 'package:flutter_mekanix_app/helpers/toast.dart';
 import 'package:flutter_mekanix_app/services/auth_service.dart';
 import 'package:flutter_mekanix_app/views/auth/login.dart';
@@ -42,24 +41,26 @@ class _ProfileSectionState extends State<ProfileSection> {
           widget.sideMenu.changePage(0);
         },
         child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: DefaultTabController(
-              length: 2,
-              child: Column(
-                children: [
-                  const CustomTabBar(
-                      title1: 'Profile', title2: 'Change Password'),
-                  Expanded(
-                    child: TabBarView(
-                      children: [
-                        ProfileSectionView(context),
-                        ChangePasswordSectionView(context),
-                      ],
-                    ),
-                  )
-                ],
-              ),
-            )),
+          padding: const EdgeInsets.all(16.0),
+          child: ProfileSectionView(context),
+          // child: DefaultTabController(
+          //   length: 2,
+          //   child: Column(
+          //     children: [
+          //       const CustomTabBar(
+          //           title1: 'Profile', title2: 'Change Password'),
+          //       Expanded(
+          //         child: TabBarView(
+          //           children: [
+          //             ProfileSectionView(context),
+          //             ChangePasswordSectionView(context),
+          //           ],
+          //         ),
+          //       )
+          //     ],
+          //   ),
+          // ),
+        ),
       ),
     );
   }

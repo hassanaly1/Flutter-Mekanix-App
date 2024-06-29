@@ -281,21 +281,24 @@ class TaskListView extends StatelessWidget {
                                 reportName: task.name,
                                 task: task,
                                 isTemplate: task.isTemplate,
+                                isDefault: task.isDefault,
                               ),
                             );
                     },
-                    trailing: InkWell(
-                      onTap: () {
-                        _showDeletePopup(
-                            context: context,
-                            controller: controller,
-                            id: task.id ?? '');
-                      },
-                      child: const Icon(
-                        Icons.remove_circle,
-                        color: Colors.red,
-                      ),
-                    ),
+                    trailing: task.isDefault
+                        ? null
+                        : InkWell(
+                            onTap: () {
+                              _showDeletePopup(
+                                  context: context,
+                                  controller: controller,
+                                  id: task.id ?? '');
+                            },
+                            child: const Icon(
+                              Icons.remove_circle,
+                              color: Colors.red,
+                            ),
+                          ),
                     leading: CustomTextWidget(
                       text: '${index + 1}'.toString(),
                       fontSize: 16.0,
@@ -381,6 +384,7 @@ class CustomPopup {
                   () => CustomTaskScreen(
                     reportName: reportNameController.text.trim(),
                     isTemplate: currentPage == 0 ? false : true,
+                    isDefault: false,
                   ),
                 );
               } else {
@@ -527,6 +531,7 @@ class CustomTemplatePopup {
                       reportName: task.name,
                       task: task,
                       isTemplate: task.isTemplate,
+                      isDefault: task.isDefault,
                     ),
                   );
                   // Get.to(

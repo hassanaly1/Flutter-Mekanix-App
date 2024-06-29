@@ -6,12 +6,14 @@ class ContainerHeading extends StatelessWidget {
   final String heading;
   final VoidCallback? onAdd;
   final VoidCallback? onDelete;
+  final bool showIcons;
 
   const ContainerHeading({
     super.key,
     required this.heading,
     required this.onAdd,
     this.onDelete,
+    required this.showIcons,
   });
 
   @override
@@ -31,18 +33,21 @@ class ContainerHeading extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
           ),
-          Row(
-            children: [
-              InkWell(
-                  onTap: onAdd,
-                  child: const Icon(FontAwesomeIcons.circlePlus,
-                      color: Colors.black54)),
-              const SizedBox(width: 6.0),
-              InkWell(
-                  onTap: onDelete,
-                  child: const Icon(Icons.remove_circle, color: Colors.red)),
-            ],
-          ),
+          showIcons
+              ? Row(
+                  children: [
+                    InkWell(
+                        onTap: onAdd,
+                        child: const Icon(FontAwesomeIcons.circlePlus,
+                            color: Colors.black54)),
+                    const SizedBox(width: 6.0),
+                    InkWell(
+                        onTap: onDelete,
+                        child:
+                            const Icon(Icons.remove_circle, color: Colors.red)),
+                  ],
+                )
+              : const SizedBox(),
         ],
       ),
     );

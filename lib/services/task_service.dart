@@ -213,6 +213,7 @@ class TaskService {
       'Content-Type': 'application/json',
     };
     debugPrint('Updating task with id: $taskId');
+    debugPrint('Updating task data: ${jsonEncode(taskData)}');
     try {
       final response = await http.put(
         Uri.parse(

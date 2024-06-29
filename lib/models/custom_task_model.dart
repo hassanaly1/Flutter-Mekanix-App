@@ -2,7 +2,7 @@ class MyCustomTask {
   final String? id;
   final String name;
   String? customerName, customerEmail;
-  bool isForm, isTemplate;
+  bool isForm, isTemplate, isDefault;
   final List<MyPage> pages;
 
   MyCustomTask({
@@ -12,6 +12,7 @@ class MyCustomTask {
     this.customerEmail,
     required this.isForm,
     required this.isTemplate,
+    required this.isDefault,
     required this.pages,
   });
 
@@ -34,6 +35,7 @@ class MyCustomTask {
       customerEmail: map['customer_email'],
       isForm: !map['is_template'],
       isTemplate: map['is_template'],
+      isDefault: map['is_default'],
       pages: map["pages"] == null
           ? []
           : List<MyPage>.from(
@@ -50,16 +52,17 @@ class MyPage {
 
   Map<String, dynamic> toMap() {
     return {
-      'sections': sections.map((MySection section) => section.toMap()).toList(),
+      'formSections':
+          sections.map((MySection section) => section.toMap()).toList(),
     };
   }
 
   static fromMap(Map<String, dynamic> map) {
     return MyPage(
-      sections: map["sections"] == null
+      sections: map["formSections"] == null
           ? []
           : List<MySection>.from(
-              map["sections"]!.map((x) => MySection.fromMap(x)),
+              map["formSections"]!.map((x) => MySection.fromMap(x)),
             ),
     );
   }
