@@ -90,6 +90,7 @@ class EnginesController extends GetxController {
   }
 
   Future<void> getAllEngines({String? searchName, int? page}) async {
+    universalController.engines.clear();
     try {
       isEnginesAreLoading.value = true;
       _currentPage.value = 1;

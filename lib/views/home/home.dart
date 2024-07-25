@@ -100,7 +100,7 @@ class _HomeScreenState extends State<HomeScreen>
                           enlargeCenterPage: true,
                           autoPlay: false,
                           enableInfiniteScroll: false,
-                          viewportFraction: 0.65,
+                          viewportFraction: 0.7,
                           onPageChanged: (index, reason) {
                             if (reason == CarouselPageChangedReason.manual) {
                               _onCarouselPageChanged(index, reason);
@@ -200,7 +200,7 @@ class NewWidget extends StatelessWidget {
         onTap: onTap,
         child: ReUsableContainer(
           height: 100,
-          width: 220,
+          width: 240,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [

@@ -297,7 +297,7 @@ class _CustomTaskScreenState extends State<CustomTaskScreen> {
                   ),
                 )
               else
-                IconButton(
+                const IconButton(
                     onPressed: null,
                     icon: Icon(
                       Icons.more_vert_sharp,

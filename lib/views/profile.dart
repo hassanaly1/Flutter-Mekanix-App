@@ -1,13 +1,14 @@
 import 'package:easy_sidemenu/easy_sidemenu.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_mekanix_app/controllers/dashboard_controller.dart';
 import 'package:flutter_mekanix_app/controllers/universal_controller.dart';
 import 'package:flutter_mekanix_app/helpers/appcolors.dart';
 import 'package:flutter_mekanix_app/helpers/custom_button.dart';
 import 'package:flutter_mekanix_app/helpers/custom_text.dart';
 import 'package:flutter_mekanix_app/helpers/reusable_textfield.dart';
 import 'package:flutter_mekanix_app/helpers/storage_helper.dart';
+import 'package:flutter_mekanix_app/helpers/tabbar.dart';
 import 'package:flutter_mekanix_app/helpers/toast.dart';
+import 'package:flutter_mekanix_app/helpers/validator.dart';
 import 'package:flutter_mekanix_app/services/auth_service.dart';
 import 'package:flutter_mekanix_app/views/auth/login.dart';
 import 'package:flutter_mekanix_app/views/task/widgets/heading_and_textfield.dart';
@@ -26,9 +27,15 @@ class ProfileSection extends StatefulWidget {
 class _ProfileSectionState extends State<ProfileSection> {
   final UniversalController universalController = Get.find();
   RxBool isLoading = false.obs;
+  RxBool isChangePasswordLoading = false.obs;
+  RxBool isLogoutLoading = false.obs;
   RxBool circularLoading = false.obs;
   TextEditingController firstNameController = TextEditingController();
   TextEditingController lastNameController = TextEditingController();
+  GlobalKey<FormState> changePasswordFormKey = GlobalKey<FormState>();
+  TextEditingController currentController = TextEditingController();
+  TextEditingController newPasswordController = TextEditingController();
+  TextEditingController confirmNewPasswordController = TextEditingController();
   final ImagePicker picker = ImagePicker();
 
   @override
@@ -42,24 +49,23 @@ class _ProfileSectionState extends State<ProfileSection> {
         },
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: ProfileSectionView(context),
-          // child: DefaultTabController(
-          //   length: 2,
-          //   child: Column(
-          //     children: [
-          //       const CustomTabBar(
-          //           title1: 'Profile', title2: 'Change Password'),
-          //       Expanded(
-          //         child: TabBarView(
-          //           children: [
-          //             ProfileSectionView(context),
-          //             ChangePasswordSectionView(context),
-          //           ],
-          //         ),
-          //       )
-          //     ],
-          //   ),
-          // ),
+          child: DefaultTabController(
+            length: 2,
+            child: Column(
+              children: [
+                const CustomTabBar(
+                    title1: 'Profile', title2: 'Change Password'),
+                Expanded(
+                  child: TabBarView(
+                    children: [
+                      ProfileSectionView(context),
+                      ChangePasswordSectionView(context),
+                    ],
+                  ),
+                )
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -90,7 +96,6 @@ class _ProfileSectionState extends State<ProfileSection> {
                         color: AppColors.primaryColor,
                         strokeWidth: 2.0,
                       ),
-                    // Show circular loading indicator
                   ],
                 )),
           ),
@@ -159,18 +164,40 @@ class _ProfileSectionState extends State<ProfileSection> {
                       textColor: Colors.black87,
                     ),
                   ),
-                  CustomButton(
-                    isLoading: false,
-                    buttonText: 'Logout',
-                    onTap: () {
-                      storage.remove('token');
-                      storage.remove('user_info');
-                      Get.delete<UniversalController>();
-                      Get.delete<DashboardController>();
-                      // Get.delete<EnginesController>();
-                      Get.offAll(() => LoginScreen());
-                    },
-                    textColor: Colors.white60,
+                  Obx(
+                    () => CustomButton(
+                      isLoading: isLogoutLoading.value,
+                      buttonText: 'Logout',
+                      onTap: () async {
+                        try {
+                          isLogoutLoading.value = true;
+                          bool isSuccess = await AuthService().logout();
+                          if (isSuccess) {
+                            ToastMessage.showToastMessage(
+                                message: 'Logout Successfully',
+                                backgroundColor: Colors.green);
+                            storage.remove('token');
+                            storage.remove('user_info');
+                            Get.deleteAll();
+                            // Get.delete<UniversalController>();
+                            // Get.delete<DashboardController>();
+                            // Get.delete<EnginesController>();
+                            Get.offAll(() => LoginScreen());
+                          } else {
+                            ToastMessage.showToastMessage(
+                                message: 'Something went wrong, try again',
+                                backgroundColor: Colors.red);
+                          }
+                        } catch (e) {
+                          ToastMessage.showToastMessage(
+                              message: 'Something went wrong, try again',
+                              backgroundColor: Colors.red);
+                        } finally {
+                          isLogoutLoading.value = false;
+                        }
+                      },
+                      textColor: Colors.white60,
+                    ),
                   )
                 ],
               ),
@@ -190,37 +217,93 @@ class _ProfileSectionState extends State<ProfileSection> {
             padding: EdgeInsets.symmetric(
                 vertical: context.height * 0.03,
                 horizontal: context.width * 0.01),
-            child: Column(
-              children: [
-                const CustomTextWidget(
-                  text: 'Change Password',
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
-                const SizedBox(height: 22.0),
-                HeadingAndTextfield(
-                  controller: firstNameController,
-                  title: 'Current Password',
-                ),
-                HeadingAndTextfield(
-                  title: 'New Password',
-                  controller: lastNameController,
-                ),
-                const HeadingAndTextfield(
-                  title: 'Confirm New Password',
-                ),
-                Obx(
-                  () => CustomButton(
-                    isLoading: isLoading.value,
-                    buttonText: 'Change Password',
-                    onTap: () {
-                      updateProfileInfo();
-                    },
-                    usePrimaryColor: true,
-                    textColor: Colors.black87,
+            child: Form(
+              key: changePasswordFormKey,
+              child: Column(
+                children: [
+                  const CustomTextWidget(
+                    text: 'Change Password',
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
                   ),
-                ),
-              ],
+                  const SizedBox(height: 22.0),
+                  HeadingAndTextfield(
+                    controller: currentController,
+                    title: 'Current Password',
+                    validator: (p0) => AppValidator.validateEmptyText(
+                      fieldName: 'Current Password',
+                      value: p0,
+                    ),
+                  ),
+                  HeadingAndTextfield(
+                    title: 'New Password',
+                    controller: newPasswordController,
+                    validator: (p0) => AppValidator.validateEmptyText(
+                      fieldName: 'New Password',
+                      value: p0,
+                    ),
+                  ),
+                  HeadingAndTextfield(
+                    title: 'Confirm New Password',
+                    controller: confirmNewPasswordController,
+                    validator: (p0) => AppValidator.validateEmptyText(
+                      fieldName: 'Confirm New Password',
+                      value: p0,
+                    ),
+                  ),
+                  Obx(
+                    () => CustomButton(
+                      isLoading: isChangePasswordLoading.value,
+                      buttonText: 'Change Password',
+                      onTap: () async {
+                        if (changePasswordFormKey.currentState!.validate()) {
+                          if (newPasswordController.text !=
+                              confirmNewPasswordController.text) {
+                            ToastMessage.showToastMessage(
+                                message:
+                                    'New Password and Confirm New Password should be same',
+                                backgroundColor: Colors.red);
+                          } else {
+                            try {
+                              isChangePasswordLoading.value = true;
+                              bool isSuccess =
+                                  await AuthService().changePasswordInApp(
+                                currentPassword: currentController.text.trim(),
+                                newPassword: newPasswordController.text.trim(),
+                                confirmNewPassword:
+                                    confirmNewPasswordController.text.trim(),
+                              );
+
+                              if (isSuccess) {
+                                currentController.clear();
+                                newPasswordController.clear();
+                                confirmNewPasswordController.clear();
+
+                                ToastMessage.showToastMessage(
+                                    message: 'Password Changed Successfully',
+                                    backgroundColor: Colors.green);
+                              } else {
+                                ToastMessage.showToastMessage(
+                                    message:
+                                        'Old Password is Incorrect, Please Enter Correct Password',
+                                    backgroundColor: Colors.red);
+                              }
+                            } catch (e) {
+                              ToastMessage.showToastMessage(
+                                  message: 'Something went wrong, try again',
+                                  backgroundColor: Colors.red);
+                            } finally {
+                              isChangePasswordLoading.value = false;
+                            }
+                          }
+                        }
+                      },
+                      usePrimaryColor: true,
+                      textColor: Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],

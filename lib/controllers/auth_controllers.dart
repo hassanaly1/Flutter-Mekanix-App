@@ -11,8 +11,8 @@ import 'package:get/get.dart';
 
 class AuthController extends GetxController {
   var isLoading = false.obs;
-  RxBool showPassword = false.obs;
-  RxBool showConfirmPassword = false.obs;
+  RxBool showPassword = true.obs;
+  RxBool showConfirmPassword = true.obs;
 
   TextEditingController fNameController = TextEditingController();
   TextEditingController lNameController = TextEditingController();
@@ -26,10 +26,6 @@ class AuthController extends GetxController {
   final GlobalKey<FormState> changePasswordFormKey = GlobalKey<FormState>();
 
   final AuthService authService = AuthService();
-
-  void saveUserInfo(Map<String, dynamic> userInfo) {
-    storage.write('user_info', userInfo);
-  }
 
   // RegisterUser
   Future<void> registerUser() async {
@@ -118,9 +114,11 @@ class AuthController extends GetxController {
         if (response['status'] == 'success') {
           ToastMessage.showToastMessage(
               message: 'Login Successfully', backgroundColor: Colors.green);
-          storage.write('token', response['token']);
-          // controller.saveUserInfo(response['user']);
-          saveUserInfo(response['user']);
+          String token = response['token'];
+          storage.write('token', token);
+          print('TokenAtStorage: ${storage.read('token')}');
+          storage.write('user_info', response['user']);
+          debugPrint('UserAtStorage: ${storage.read('user_info')}');
           Get.offAll(() => const DashboardScreen(),
               transition: Transition.zoom);
           emailController.clear();
@@ -283,5 +281,4 @@ class AuthController extends GetxController {
     passwordController.dispose();
     confirmPasswordController.dispose();
   }
-
 }

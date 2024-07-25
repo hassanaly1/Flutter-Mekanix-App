@@ -238,8 +238,7 @@ class TaskListView extends StatelessWidget {
       child: Obx(() {
         if (controller.isTasksAreLoading.value) {
           return Center(
-            child: SpinKitRing(
-              lineWidth: 2.0,
+            child: SpinKitThreeBounce(
               color: AppColors.blueTextColor,
               size: 30,
             ),
@@ -249,10 +248,18 @@ class TaskListView extends StatelessWidget {
             : controller.submittedTasks.isEmpty) {
           return Center(
             heightFactor: 10.0,
-            child: CustomTextWidget(
-              text: isTemplate
-                  ? 'No Templates Available'
-                  : 'No Submitted Tasks Available',
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  SizedBox(height: context.height * 0.2),
+                  CustomTextWidget(
+                    text: isTemplate
+                        ? 'No Templates Available'
+                        : 'No Submitted Tasks Available',
+                  ),
+                  SizedBox(height: context.height * 0.5),
+                ],
+              ),
             ),
           );
         } else {

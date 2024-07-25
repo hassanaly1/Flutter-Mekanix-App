@@ -5,6 +5,8 @@ import 'package:flutter_mekanix_app/controllers/universal_controller.dart';
 import 'package:flutter_mekanix_app/helpers/custom_text.dart';
 import 'package:flutter_mekanix_app/helpers/profile_avatar.dart';
 import 'package:flutter_mekanix_app/helpers/storage_helper.dart';
+import 'package:flutter_mekanix_app/helpers/toast.dart';
+import 'package:flutter_mekanix_app/services/auth_service.dart';
 import 'package:flutter_mekanix_app/views/auth/login.dart';
 import 'package:flutter_mekanix_app/views/dashboard/right_side.dart';
 import 'package:flutter_mekanix_app/views/dashboard/side_menu.dart';
@@ -166,13 +168,31 @@ class HomeAppbar extends StatelessWidget {
                     ),
                     child: context.isLandscape
                         ? IconButton(
-                            onPressed: () {
-                              storage.remove('token');
-                              storage.remove('user_info');
-                              Get.delete<UniversalController>();
-                              Get.delete<DashboardController>();
-                              // Get.delete<EnginesController>();
-                              Get.offAll(() => LoginScreen());
+                            onPressed: () async {
+                              try {
+                                bool isSuccess = await AuthService().logout();
+                                if (isSuccess) {
+                                  ToastMessage.showToastMessage(
+                                      message: 'Logout Successfully',
+                                      backgroundColor: Colors.green);
+                                  storage.remove('token');
+                                  storage.remove('user_info');
+                                  // Get.delete<UniversalController>();
+                                  // Get.delete<DashboardController>();
+                                  // Get.delete<EnginesController>();
+                                  Get.deleteAll();
+                                  Get.offAll(() => LoginScreen());
+                                } else {
+                                  ToastMessage.showToastMessage(
+                                      message:
+                                          'Something went wrong, try again',
+                                      backgroundColor: Colors.red);
+                                }
+                              } catch (e) {
+                                ToastMessage.showToastMessage(
+                                    message: 'Something went wrong, try again',
+                                    backgroundColor: Colors.red);
+                              }
                             },
                             icon: const Icon(Icons.logout_rounded),
                           )

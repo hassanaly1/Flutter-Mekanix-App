@@ -262,6 +262,67 @@ class AuthService {
     }
   }
 
+  // ChangePasswordInApp
+  Future<bool> changePasswordInApp({
+    required String currentPassword,
+    required String newPassword,
+    required String confirmNewPassword,
+  }) async {
+    final Uri apiUrl =
+        Uri.parse(ApiEndPoints.baseUrl + ApiEndPoints.changePasswordInAppUrl);
+
+    final Map<String, dynamic> payload = {
+      'password': currentPassword,
+      'new_password': newPassword,
+      'confirm_new_password': confirmNewPassword,
+    };
+
+    try {
+      final http.Response response = await http.post(
+        apiUrl,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${storage.read('token')}',
+        },
+        body: jsonEncode(payload),
+      );
+
+      debugPrint('Response: ${response.body}');
+      if (response.statusCode == 200) {
+        debugPrint('StatusCode: ${response.statusCode}');
+        debugPrint('ResponseBody: ${response.body}');
+
+        return true;
+      } else {
+        final Map<String, dynamic> errorResponse = jsonDecode(response.body);
+        debugPrint('StatusCodeIfError: ${response.statusCode}');
+        debugPrint('StatusCodeIfError: ${response.body}');
+
+        return false;
+      }
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<bool> logout() async {
+    final Uri apiUrl = Uri.parse(ApiEndPoints.baseUrl + ApiEndPoints.logoutUrl);
+    final response = await http.post(
+      apiUrl,
+      headers: <String, String>{
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ${storage.read('token')}',
+      },
+    );
+    debugPrint('Response: ${response.body}');
+    if (response.statusCode == 200) {
+      final responseBody = jsonDecode(response.body);
+      return responseBody['status'] == 'success';
+    } else {
+      return false;
+    }
+  }
+
 // UpdateProfile
   Future<bool> updateProfile({
     required String firstName,
@@ -314,7 +375,6 @@ class AuthService {
             debugPrint(
                 'Error: ${jsonResponse['message']} ${response.reasonPhrase}}');
           }
-          debugPrint('Profile updated successfully');
         } on FormatException catch (e) {
           debugPrint('Error parsing response: $e');
         }
@@ -371,7 +431,7 @@ class AuthService {
             storage.write('user_info', userData);
             Get.find<UniversalController>().updateUserInfo(userData!);
             isSuccess = true;
-            debugPrint('Profile updated successfully');
+            debugPrint('Profile Image updated successfully');
           } else {
             debugPrint(
                 'Error: ${jsonResponse['message']} ${response.reasonPhrase}}');
@@ -392,6 +452,29 @@ class AuthService {
     }
 
     return UpdateUserImageResult(isSuccess: isSuccess, userData: userData);
+  }
+
+  Future<bool> postAuthStateChange() async {
+    var url = Uri.parse(
+        'https://mechanixapi-production.up.railway.app/api/auth/onauthstatechange');
+    var token = storage.read('token');
+    var headers = {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    };
+
+    var response = await http.post(
+      url,
+      headers: headers,
+    );
+
+    if (response.statusCode == 200) {
+      print(response.body);
+      return true;
+    } else {
+      print(response.reasonPhrase);
+      return false;
+    }
   }
 }
 

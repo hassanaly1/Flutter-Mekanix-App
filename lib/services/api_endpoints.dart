@@ -11,6 +11,10 @@ class ApiEndPoints {
   static String changePasswordUrl = '/api/auth/changepassword';
   static String updateProfileUrl = '/api/auth/editprofile';
   static String updateProfilePictureUrl = '/api/auth/editprofilefile';
+  static String onAuthStateChangeUrl = '/api/auth/onauthstatechange';
+  static String changePasswordInAppUrl =
+      '/api/auth/change-password-by-logged-in-user';
+  static String logoutUrl = '/api/auth/userLogout';
 
   //Custom-Task
   static String createCustomTaskUrl = '/api/formbuilder/save-custom-form';

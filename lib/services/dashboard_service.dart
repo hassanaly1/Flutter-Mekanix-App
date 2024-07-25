@@ -7,7 +7,6 @@ import 'package:http/http.dart' as http;
 
 class DashboardService {
   Future<Map<String, dynamic>> fetchAnalyticsData() async {
-    debugPrint('Fetching analytics data...');
     String apiUrl = '${ApiEndPoints.baseUrl}${ApiEndPoints.getAnalyticsUrl}';
     final response = await http.post(
       Uri.parse(apiUrl),
@@ -19,7 +18,6 @@ class DashboardService {
     debugPrint('StatusCode: ${response.statusCode} + ${response.reasonPhrase}');
     if (response.statusCode == 200) {
       var data = json.decode(response.body);
-      print(data);
       return data;
     } else {
       throw Exception('Failed to load data');

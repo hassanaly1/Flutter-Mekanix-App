@@ -115,6 +115,7 @@ class SideMenuCard extends StatelessWidget {
       ),
       _buildSideMenuItem(
         title: 'Profile',
+        icon: CupertinoIcons.person_fill,
         onTap: (index, _) {
           sideMenu.changePage(index);
           scaffoldKey.currentState?.closeDrawer();

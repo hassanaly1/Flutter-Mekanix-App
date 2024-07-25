@@ -32,7 +32,10 @@ class CustomButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-        onTap: onTap,
+        onTap: () {
+          FocusManager.instance.primaryFocus?.unfocus();
+          isLoading ? null : onTap();
+        },
         child: ReUsableContainer(
           width: width,
           verticalPadding: context.height * 0.01,
